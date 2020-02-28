@@ -9,12 +9,12 @@ import time as ttime
 import os
 import glob
 
-from api import get_current_scanid
-
 
 # %% Main loop for XRF maps -> HDF5
 def autosave_xrf(start_id, wd='', N=1000, dt=60):
     """
+    SRX Autosave
+
     Setup the main loop to automatically download and make the HDF5s
     
     Parameters
