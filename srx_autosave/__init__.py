@@ -1,8 +1,110 @@
 # Import packages
-import numpy as np
-import time as ttime
 import os
-import glob
+import sys
+
+from api import *
+
+from PyQt5 import QtWidgets
+from PyQt5 import uic
+from PyQt5.QtCore import QThread, pyqtSignal
+from PyQt5.QtWidgets import QFileDialog
+
+
+class MainWindow(QtWidgets.QMainWindow):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        uic.loadUi("gui/main_form.ui", self)
+
+        self.pushButton_currentid.released.connect(self.update_scanid)
+        self.pushButton_browse.released.connect(self.get_dir)
+        self.pushButton_start.released.connect(self.start_loop)
+        self.pushButton_stop.released.connect(self.stop_loop)
+
+    def update_scanid(self):
+        self.lineEdit_startid.setProperty("text", str(get_current_scanid()))
+        return
+
+    def get_dir(self):
+        dialog = QFileDialog()
+        dialog.setFileMode(QFileDialog.DirectoryOnly)
+
+        folder = dialog.getExistingDirectory(self, 'Save Location')
+        if folder != "":
+            if folder[-1] != "/" and folder[-1] != "\\":
+                folder += os.sep
+            self.lineEdit_savelocation.setProperty("text", folder)
+        return
+
+    def start_loop(self):
+        # Check for a thread running the main loop
+        try:
+            if self.th.isRunning is True:
+                return
+        except AttributeError:
+            self.th = Tloop(self)
+
+        # Check the scan parameters
+        self.start_id = int(self.lineEdit_startid.text())
+        self.wd = self.lineEdit_savelocation.text()
+        self.N = int(self.lineEdit_numscan.text())
+        self.dt = int(self.lineEdit_delay.text())
+        (self.start_id, self.wd, self.N, self.dt) = check_inputs(self.start_id, self.wd, self.N, self.dt)
+        print(self.start_id, self.wd, self.N, self.dt)
+        self.lineEdit_savelocation.setProperty("text", self.wd)
+        self.lineEdit_startid.setProperty("text", str(self.start_id))
+        self.lineEdit_numscan.setProperty("text", str(self.N))
+        self.lineEdit_delay.setProperty("text", str(self.dt))
+        
+        # Change to the proper working directory
+        os.chdir(self.wd)
+
+        # Start the thread
+        self.th.start()
+        return
+
+    def stop_loop(self):
+        self.th.stop()
+        return
+
+    def update_progress(self, x):
+        self.progressBar.setProperty("value", x)
+        return
+
+
+class Tloop(QThread):
+    signal_update_progressBar = pyqtSignal(float)
+    DT = 0.01  # sleep time
+
+    def __init__(self, form):
+        super(QThread, self).__init__()
+        self.form = form
+        self.isRunning = False
+        self.signal_update_progressBar.connect(self.form.update_progress)
+
+    def __del__(self):
+        self.isRunning = False
+        self.wait()
+
+    def stop(self):
+        self.__del__()
+
+    def run(self):
+        self.isRunning = True
+
+        try:
+            while self.isRunning:
+                xrf_loop(self.form.start_id, self.form.N)
+                loop_sleep(self.form.dt, gui=self)
+        except KeyboardInterrupt:
+            print("\n\nStopping SRX Autosave loop.")
+            pass
+
+
+app = QtWidgets.QApplication(sys.argv)
+window = MainWindow()
+window.show()
+app.exec_()
 
 
 # %% Main loop for XRF maps -> HDF5
@@ -33,82 +135,17 @@ def autosave_xrf(start_id, wd="", N=1000, dt=60):
     >>> autosave_xrf(1234, wd='/home/xf05id1/current_user_data/, N=1000, dt=60)
 
     """
-
     # Check the input parameters
-    if start_id < 0:
-        # Need to add 1 to scan ID
-        # Otherwise it will grab the current value (which would be from the previous user)
-        start_id = get_current_scanid() + 1
-        print(f"Using startind scan ID: {start_id}")
-    if wd == "":
-        wd = os.getcwd()
-        print(f"Using current directory.\n{wd}")
+    (start_id, wd, N, dt) = check_inputs(start_id, wd, N, dt)
     os.chdir(wd)
-    if N < 1:
-        # Add logic later that if N < 1, then always use current scan ID
-        print("Warning: N changed to 100.")
-        N = 100
-    if dt < 1:
-        print("Warning: dt changed to 1 second.")
-        dt = 1
 
     print("--------------------------------------------------")
 
-    # Build the possible list of scan IDs and filenames
-    num = np.arange(start_id, start_id + N, 1)
-    # Maybe a function for this
-    # make_XRF_fn(scan_id) -> return 'scan2D_{scanid}.h5'
-    # filelist_h5 = ['scan2D_' + str(n) + '.h5' for n in num]
-
-    # Enter the main loop
-    def mainloop():
-        for i in range(N):
-            # Check if the scan ID exists
-            # We could make a function to check if current scan ID
-            # >= this value. Or same thing but return True/False
-            scanid = int(num[i])
-            try:
-                h = db[scanid]
-            except Exception:
-                print(f"{scanid} does not exist!")
-                break
-
-            # Output to command line that we are on a given scan
-            print(scanid, end="\t", flush=True)
-            print(h.start["plan_name"], end="\t", flush=True)  # This might change
-
-            # Check if fly scan
-            # Should be more generic, if XRF scan
-            if h.start["plan_name"] == "scan_and_fly":
-                # fname = filelist_h5[i]
-                # Check if the file noes not exist
-                # if not os.path.isfile(fname):
-                if not glob.glob(f"scan2D_{scanid}_*.h5") and not os.path.isfile(
-                    f"scan2D_{scanid}.h5"
-                ):
-                    # Check if the scan is done
-                    try:
-                        # db[scanid].stop['time']
-                        make_hdf(scanid, completed_scans_only=True)
-                    except Exception:
-                        pass
-                else:
-                    print("XRF HDF5 already created.")
-            else:
-                print()
-
-        print("\nSleeping for %d seconds...Press Ctrl-C to exit" % (dt), flush=True)
-        t0 = ttime.monotonic()
-        del_t = 0.0
-        while del_t < dt:
-            print("   %02d seconds remaining..." % (dt - del_t), end="\r", flush=True)
-            ttime.sleep(0.5)
-            del_t = ttime.monotonic() - t0
-        print("--------------------------------------------------")
-
     try:
         while True:
-            mainloop()
+            xrf_loop(start_id, N)
+            loop_sleep(dt)
+
     except KeyboardInterrupt:
         print("\n\nExiting SRX AutoSave.")
         pass
