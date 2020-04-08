@@ -4,17 +4,12 @@ import time as ttime
 import os
 import glob
 
-from api import get_current_scanid
-
-from ._version import get_versions
-
-__version__ = get_versions()["version"]
-del get_versions
-
 
 # %% Main loop for XRF maps -> HDF5
 def autosave_xrf(start_id, wd="", N=1000, dt=60):
     """
+    SRX Autosave
+
     Setup the main loop to automatically download and make the HDF5s
 
     Parameters
