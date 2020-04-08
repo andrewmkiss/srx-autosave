@@ -1,3 +1,10 @@
+# Import packages
+import numpy as np
+import time as ttime
+from databroker import Broker
+
+# from pyxrf.api import *
+
 """
 SRX Autosave APIs
 
@@ -8,16 +15,8 @@ Andy Kiss
 """
 
 
-# %% Import packages
-import numpy as np
-import time as ttime
-
-from databroker import Broker
-# from pyxrf.api import *
-
-
 # Register the data broker
-db = Broker.named('srx')
+db = Broker.named("srx")
 
 
 # ----------------------------------------------------------------------
@@ -29,7 +28,7 @@ def echo(s):
     ----------
     s : string
         string to return (echo)
-    
+
     Returns
     -------
     s : string
@@ -76,7 +75,7 @@ def _get_current_scanid_db():
         The current scan ID
     """
 
-    return db[-1].start['scan_id']
+    return db[-1].start["scan_id"]
 
 
 def _get_current_scanid_pv():
@@ -92,8 +91,8 @@ def _get_current_scanid_pv():
     scanid : int
         The current scan ID
     """
-    
-    scanid = caget('XF:05IDA-CT{IOC:ScanBroker01}Scan:CUR_ID')
+
+    scanid = caget("XF:05IDA-CT{IOC:ScanBroker01}Scan:CUR_ID")
     return scanid
 
 

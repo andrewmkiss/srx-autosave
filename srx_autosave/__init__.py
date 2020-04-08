@@ -1,9 +1,4 @@
-
-from ._version import get_versions
-__version__ = get_versions()['version']
-del get_versions
-
-# %% Import packages
+# Import packages
 import numpy as np
 import time as ttime
 import os
@@ -11,12 +6,17 @@ import glob
 
 from api import get_current_scanid
 
+from ._version import get_versions
+
+__version__ = get_versions()["version"]
+del get_versions
+
 
 # %% Main loop for XRF maps -> HDF5
-def autosave_xrf(start_id, wd='', N=1000, dt=60):
+def autosave_xrf(start_id, wd="", N=1000, dt=60):
     """
     Setup the main loop to automatically download and make the HDF5s
-    
+
     Parameters
     ----------
     start_id : int
@@ -40,27 +40,27 @@ def autosave_xrf(start_id, wd='', N=1000, dt=60):
     """
 
     # Check the input parameters
-    if (start_id < 0):
+    if start_id < 0:
         # Need to add 1 to scan ID
         # Otherwise it will grab the current value (which would be from the previous user)
         start_id = get_current_scanid() + 1
-        print(f'Using startind scan ID: {start_id}')
-    if (wd == ''):
+        print(f"Using startind scan ID: {start_id}")
+    if wd == "":
         wd = os.getcwd()
-        print(f'Using current directory.\n{wd}')
+        print(f"Using current directory.\n{wd}")
     os.chdir(wd)
-    if (N < 1):
+    if N < 1:
         # Add logic later that if N < 1, then always use current scan ID
-        print('Warning: N changed to 100.')
+        print("Warning: N changed to 100.")
         N = 100
-    if (dt < 1):
-        print('Warning: dt changed to 1 second.')
+    if dt < 1:
+        print("Warning: dt changed to 1 second.")
         dt = 1
 
-    print('--------------------------------------------------')
+    print("--------------------------------------------------")
 
     # Build the possible list of scan IDs and filenames
-    num = np.arange(start_id, start_id+N, 1)
+    num = np.arange(start_id, start_id + N, 1)
     # Maybe a function for this
     # make_XRF_fn(scan_id) -> return 'scan2D_{scanid}.h5'
     # filelist_h5 = ['scan2D_' + str(n) + '.h5' for n in num]
@@ -74,48 +74,46 @@ def autosave_xrf(start_id, wd='', N=1000, dt=60):
             scanid = int(num[i])
             try:
                 h = db[scanid]
-            except:
-                print(f'{scanid} does not exist!')
+            except Exception:
+                print(f"{scanid} does not exist!")
                 break
-            
+
             # Output to command line that we are on a given scan
-            print(scanid, end='\t', flush=True)
-            print(h.start['plan_name'], end='\t', flush=True)  # This might change
-            
+            print(scanid, end="\t", flush=True)
+            print(h.start["plan_name"], end="\t", flush=True)  # This might change
+
             # Check if fly scan
             # Should be more generic, if XRF scan
-            if (h.start['plan_name'] == 'scan_and_fly'):
+            if h.start["plan_name"] == "scan_and_fly":
                 # fname = filelist_h5[i]
                 # Check if the file noes not exist
                 # if not os.path.isfile(fname):
-                if (not glob.glob(f"scan2D_{scanid}_*.h5") and
-                    not os.path.isfile(f"scan2D_{scanid}.h5")):
+                if not glob.glob(f"scan2D_{scanid}_*.h5") and not os.path.isfile(
+                    f"scan2D_{scanid}.h5"
+                ):
                     # Check if the scan is done
                     try:
                         # db[scanid].stop['time']
                         make_hdf(scanid, completed_scans_only=True)
-                    except:
+                    except Exception:
                         pass
                 else:
-                    print('XRF HDF5 already created.')
+                    print("XRF HDF5 already created.")
             else:
-                print() 
+                print()
 
-        print('\nSleeping for %d seconds...Press Ctrl-C to exit' % (dt),
-               flush=True)
+        print("\nSleeping for %d seconds...Press Ctrl-C to exit" % (dt), flush=True)
         t0 = ttime.monotonic()
         del_t = 0.0
-        while (del_t < dt):
-            print('   %02d seconds remaining...' % (dt - del_t),
-                  end='\r', flush=True)
+        while del_t < dt:
+            print("   %02d seconds remaining..." % (dt - del_t), end="\r", flush=True)
             ttime.sleep(0.5)
             del_t = ttime.monotonic() - t0
-        print('--------------------------------------------------')
+        print("--------------------------------------------------")
 
     try:
         while True:
             mainloop()
     except KeyboardInterrupt:
-        print('\n\nExiting SRX AutoSave.')
+        print("\n\nExiting SRX AutoSave.")
         pass
-
