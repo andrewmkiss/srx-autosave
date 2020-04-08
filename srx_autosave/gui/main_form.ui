@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>SRX Autosave</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -35,7 +35,7 @@
          <bool>true</bool>
         </property>
         <property name="alignment">
-         <set>Qt::AlignCenter</set>
+         <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
         </property>
        </widget>
       </item>
@@ -60,7 +60,7 @@
          </widget>
         </item>
         <item>
-         <widget class="QLabel" name="label_3">
+         <widget class="QLabel" name="label_version">
           <property name="font">
            <font>
             <family>Arial</family>
@@ -88,7 +88,7 @@
     <item>
      <layout class="QGridLayout" name="gridLayout">
       <item row="0" column="0">
-       <widget class="QLabel" name="label_4">
+       <widget class="QLabel" name="label_savelocation">
         <property name="font">
          <font>
           <family>Arial</family>
@@ -101,17 +101,23 @@
        </widget>
       </item>
       <item row="0" column="1">
-       <widget class="QLineEdit" name="lineEdit">
+       <widget class="QLineEdit" name="lineEdit_savelocation">
         <property name="font">
          <font>
           <family>Arial</family>
-          <pointsize>12</pointsize>
+          <pointsize>8</pointsize>
          </font>
+        </property>
+        <property name="text">
+         <string>/home/xf05id1/current_user_data/</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
         </property>
        </widget>
       </item>
       <item row="0" column="2">
-       <widget class="QPushButton" name="pushButton_2">
+       <widget class="QPushButton" name="pushButton_browse">
         <property name="font">
          <font>
           <family>Arial</family>
@@ -124,7 +130,7 @@
        </widget>
       </item>
       <item row="1" column="0">
-       <widget class="QLabel" name="label_5">
+       <widget class="QLabel" name="label_startid">
         <property name="font">
          <font>
           <family>Arial</family>
@@ -137,17 +143,23 @@
        </widget>
       </item>
       <item row="1" column="1">
-       <widget class="QLineEdit" name="lineEdit_2">
+       <widget class="QLineEdit" name="lineEdit_startid">
         <property name="font">
          <font>
           <family>Arial</family>
-          <pointsize>12</pointsize>
+          <pointsize>8</pointsize>
          </font>
+        </property>
+        <property name="text">
+         <string>-1</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
         </property>
        </widget>
       </item>
       <item row="1" column="2">
-       <widget class="QPushButton" name="pushButton">
+       <widget class="QPushButton" name="pushButton_currentid">
         <property name="font">
          <font>
           <family>Arial</family>
@@ -160,7 +172,7 @@
        </widget>
       </item>
       <item row="2" column="0">
-       <widget class="QLabel" name="label_6">
+       <widget class="QLabel" name="label_numscan">
         <property name="font">
          <font>
           <family>Arial</family>
@@ -173,12 +185,18 @@
        </widget>
       </item>
       <item row="2" column="1">
-       <widget class="QLineEdit" name="lineEdit_3">
+       <widget class="QLineEdit" name="lineEdit_numscan">
         <property name="font">
          <font>
           <family>Arial</family>
-          <pointsize>12</pointsize>
+          <pointsize>8</pointsize>
          </font>
+        </property>
+        <property name="text">
+         <string>100</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
         </property>
        </widget>
       </item>
@@ -196,7 +214,7 @@
        </spacer>
       </item>
       <item row="3" column="0">
-       <widget class="QLabel" name="label_7">
+       <widget class="QLabel" name="label_delay">
         <property name="font">
          <font>
           <family>Arial</family>
@@ -204,17 +222,23 @@
          </font>
         </property>
         <property name="text">
-         <string>Scan Delay:</string>
+         <string>Scan Delay [s]:</string>
         </property>
        </widget>
       </item>
       <item row="3" column="1">
-       <widget class="QLineEdit" name="lineEdit_4">
+       <widget class="QLineEdit" name="lineEdit_delay">
         <property name="font">
          <font>
           <family>Arial</family>
-          <pointsize>12</pointsize>
+          <pointsize>8</pointsize>
          </font>
+        </property>
+        <property name="text">
+         <string>60</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
         </property>
        </widget>
       </item>
@@ -251,12 +275,18 @@
       <property name="value">
        <number>0</number>
       </property>
+      <property name="textVisible">
+       <bool>false</bool>
+      </property>
+      <property name="invertedAppearance">
+       <bool>false</bool>
+      </property>
      </widget>
     </item>
     <item>
      <layout class="QHBoxLayout" name="horizontalLayout_2">
       <item>
-       <widget class="QPushButton" name="pushButton_3">
+       <widget class="QPushButton" name="pushButton_start">
         <property name="font">
          <font>
           <family>Arial</family>
@@ -269,7 +299,7 @@
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="pushButton_4">
+       <widget class="QPushButton" name="pushButton_stop">
         <property name="font">
          <font>
           <family>Arial</family>
