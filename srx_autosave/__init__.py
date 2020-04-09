@@ -29,12 +29,17 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setContentsMargins(20, 0, 20, 20)
 
         self.pushButton_currentid.released.connect(self.update_scanid)
+        self.pushButton_plus1.released.connect(self.update_scanid_plus1)
         self.pushButton_browse.released.connect(self.get_dir)
         self.pushButton_start.released.connect(self.start_loop)
         self.pushButton_stop.released.connect(self.stop_loop)
 
     def update_scanid(self):
         self.lineEdit_startid.setProperty("text", str(get_current_scanid()))
+        return
+
+    def update_scanid_plus1(self):
+        self.lineEdit_startid.setProperty("text", str(get_current_scanid()+1))
         return
 
     def get_dir(self):
