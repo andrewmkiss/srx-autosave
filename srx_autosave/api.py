@@ -5,7 +5,16 @@ import os
 import glob
 from databroker import Broker
 
-# from pyxrf.api import *
+try:
+    from pyxrf.api import *
+except ImportError:
+    print("Error importing pyXRF. Continuing without import.")
+
+try:
+    from epics import caget
+except ImportError:
+    print("Error importing caget. Continuing without import.")
+
 
 """
 SRX Autosave APIs
@@ -147,10 +156,10 @@ def xrf_loop(start_id, N, gui=None):
         scanid = int(num[i])
 
         if gui is not None:
-            gui.signal_update_status(f"Making {scanid}...")
+            gui.signal_update_status.emit(f"Making {scanid}...")
 
             if gui.isRunning is False:
-                gui.signal_update_status(f"SRX Autosave stopped.")
+                gui.signal_update_status.emit(f"SRX Autosave stopped.")
                 gui.signal_update_progressBar.emit(0)
                 return
 
@@ -177,7 +186,8 @@ def xrf_loop(start_id, N, gui=None):
                 try:
                     # db[scanid].stop['time']
                     make_hdf(scanid, completed_scans_only=True)
-                except Exception:
+                except Exception as ex:
+                    print(ex)
                     pass
             else:
                 print("XRF HDF5 already created.")

@@ -140,7 +140,7 @@ class Tloop(QThread):
 
         try:
             while self.isRunning:
-                xrf_loop(self.form.start_id, self.form.N)
+                xrf_loop(self.form.start_id, self.form.N, gui=self)
                 loop_sleep(self.form.dt, gui=self)
         except KeyboardInterrupt:
             print("\n\nStopping SRX Autosave loop.")
