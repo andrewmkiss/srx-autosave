@@ -17,7 +17,11 @@ Andy Kiss
 
 
 # Register the data broker
-db = Broker.named("temp")
+try:
+    db = Broker.named("srx")
+except AttributeError:
+    db = Broker.named("temp")
+    print("Using temporary databroker.")
 
 
 # ----------------------------------------------------------------------
@@ -134,13 +138,22 @@ def check_inputs(start_id, wd, N, dt):
     return (start_id, wd, N, dt)
 
 
-def xrf_loop(start_id, N):
+def xrf_loop(start_id, N, gui=None):
     num = np.arange(start_id, start_id + N, 1)
     for i in range(N):
         # Check if the scan ID exists
         # We could make a function to check if current scan ID
         # >= this value. Or same thing but return True/False
         scanid = int(num[i])
+
+        if gui is not None:
+            gui.signal_update_status(f"Making {scanid}...")
+
+            if gui.isRunning is False:
+                gui.signal_update_status(f"SRX Autosave stopped.")
+                gui.signal_update_progressBar.emit(0)
+                return
+
         try:
             h = db[scanid]
         except Exception:
@@ -183,13 +196,17 @@ def loop_sleep(dt, gui=None):
     t0 = ttime.monotonic()
     del_t = 0.0
     while del_t < dt:
-        print("   %02d seconds remaining..." % (dt - del_t), end="\r", flush=True)
+        str_status = "%02d seconds remaining..." % (dt - del_t)
+        print("   %s" % str_status, end="\r", flush=True)
         if gui is not None:
             gui.signal_update_progressBar.emit(100 * del_t / dt)
+            gui.signal_update_status.emit(str_status)
             if gui.isRunning is False:
+                print('SRX Autosave stopped.')
+                gui.signal_update_status.emit('SRX Autosave stopped.')
+                gui.signal_update_progressBar.emit(0)
                 break
         ttime.sleep(DT)
         del_t = ttime.monotonic() - t0
     print("--------------------------------------------------")
     return
-

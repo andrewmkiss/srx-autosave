@@ -1,8 +1,9 @@
 # Import packages
 import os
 import sys
+from pathlib import Path
 
-from api import *
+from api import (get_current_scanid, check_inputs, xrf_loop, loop_sleep)
 
 from PyQt5 import QtWidgets
 from PyQt5 import uic
@@ -15,6 +16,12 @@ class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         uic.loadUi("gui/main_form.ui", self)
+
+        self.label_logo.setProperty("pixmap", "gui/5-ID_TopAlign.png")
+        self.setProperty("windowIcon", "gui/5-ID_TopAlign.png")
+
+        self.pushButton_stop.setProperty("enabled", False)
+        self.setContentsMargins(20, 0, 20, 20)
 
         self.pushButton_currentid.released.connect(self.update_scanid)
         self.pushButton_browse.released.connect(self.get_dir)
@@ -29,51 +36,89 @@ class MainWindow(QtWidgets.QMainWindow):
         dialog = QFileDialog()
         dialog.setFileMode(QFileDialog.DirectoryOnly)
 
-        folder = dialog.getExistingDirectory(self, 'Save Location')
+        folder = dialog.getExistingDirectory(self, 'Save Location', str(Path.home()))
         if folder != "":
             if folder[-1] != "/" and folder[-1] != "\\":
                 folder += os.sep
             self.lineEdit_savelocation.setProperty("text", folder)
         return
 
-    def start_loop(self):
-        # Check for a thread running the main loop
-        try:
-            if self.th.isRunning is True:
-                return
-        except AttributeError:
-            self.th = Tloop(self)
-
-        # Check the scan parameters
+    def get_scan_parameters(self):
         self.start_id = int(self.lineEdit_startid.text())
         self.wd = self.lineEdit_savelocation.text()
         self.N = int(self.lineEdit_numscan.text())
         self.dt = int(self.lineEdit_delay.text())
-        (self.start_id, self.wd, self.N, self.dt) = check_inputs(self.start_id, self.wd, self.N, self.dt)
-        print(self.start_id, self.wd, self.N, self.dt)
+
+    def set_scan_parameters(self):
         self.lineEdit_savelocation.setProperty("text", self.wd)
         self.lineEdit_startid.setProperty("text", str(self.start_id))
         self.lineEdit_numscan.setProperty("text", str(self.N))
         self.lineEdit_delay.setProperty("text", str(self.dt))
-        
+
+    def lock_widgets(self, value):
+        self.lineEdit_savelocation.setProperty("enabled", value)
+        self.lineEdit_startid.setProperty("enabled", value)
+        self.lineEdit_numscan.setProperty("enabled", value)
+        self.lineEdit_delay.setProperty("enabled", value)
+        self.pushButton_browse.setProperty("enabled", value)
+        self.pushButton_currentid.setProperty("enabled", value)
+
+    def start_loop(self):
+        # Check for a thread running the main loop
+        try:
+            if self.th.isRunning is True:
+                self.th.stop()
+        except AttributeError:
+            self.th = Tloop(self)
+
+        # Check the scan parameters
+        self.get_scan_parameters()
+        # (self.start_id, self.wd, self.N, self.dt) = check_inputs(self.start_id, self.wd, self.N, self.dt)
+        tmp = check_inputs(self.start_id, self.wd, self.N, self.dt)
+        self.start_id = tmp[0]
+        self.wd = tmp[1]
+        self.N = tmp[2]
+        self.dt = tmp[3]
+        # print(self.start_id, self.wd, self.N, self.dt)
+        self.set_scan_parameters()
+
         # Change to the proper working directory
-        os.chdir(self.wd)
+        try:
+            os.chdir(self.wd)
+        except FileNotFoundError as ex:
+            self.label_status.setProperty("text", str(ex))
+            print(ex)
+            return
 
         # Start the thread
+        self.pushButton_stop.setProperty("enabled", True)
+        self.pushButton_start.setProperty("text", "Force Restart")
+        self.lock_widgets(False)
         self.th.start()
         return
 
     def stop_loop(self):
-        self.th.stop()
+        try:
+            self.th.stop()
+            self.pushButton_stop.setProperty("enabled", False)
+            self.pushButton_start.setProperty("text", "Start")
+            self.lock_widgets(True)
+        except AttributeError:
+            pass
         return
 
     def update_progress(self, x):
         self.progressBar.setProperty("value", x)
         return
 
+    def update_status(self, x):
+        self.label_status.setProperty("text", x)
+        return
+
 
 class Tloop(QThread):
     signal_update_progressBar = pyqtSignal(float)
+    signal_update_status = pyqtSignal(str)
     DT = 0.01  # sleep time
 
     def __init__(self, form):
@@ -81,6 +126,7 @@ class Tloop(QThread):
         self.form = form
         self.isRunning = False
         self.signal_update_progressBar.connect(self.form.update_progress)
+        self.signal_update_status.connect(self.form.update_status)
 
     def __del__(self):
         self.isRunning = False
@@ -145,7 +191,6 @@ def autosave_xrf(start_id, wd="", N=1000, dt=60):
         while True:
             xrf_loop(start_id, N)
             loop_sleep(dt)
-
     except KeyboardInterrupt:
         print("\n\nExiting SRX AutoSave.")
         pass

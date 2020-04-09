@@ -6,19 +6,23 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1573</width>
+    <width>1538</width>
     <height>1166</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>SRX Autosave</string>
   </property>
+  <property name="windowIcon">
+   <iconset>
+    <normaloff>5-ID_TopAlign.png</normaloff>5-ID_TopAlign.png</iconset>
+  </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout_2">
     <item>
      <layout class="QHBoxLayout" name="horizontalLayout">
       <item>
-       <widget class="QLabel" name="label">
+       <widget class="QLabel" name="label_logo">
         <property name="maximumSize">
          <size>
           <width>256</width>
@@ -87,6 +91,9 @@
     </item>
     <item>
      <layout class="QGridLayout" name="gridLayout">
+      <property name="leftMargin">
+       <number>0</number>
+      </property>
       <item row="0" column="0">
        <widget class="QLabel" name="label_savelocation">
         <property name="font">
@@ -97,6 +104,9 @@
         </property>
         <property name="text">
          <string>Save Location:</string>
+        </property>
+        <property name="margin">
+         <number>0</number>
         </property>
        </widget>
       </item>
@@ -140,6 +150,9 @@
         <property name="text">
          <string>Starting Scan ID:</string>
         </property>
+        <property name="margin">
+         <number>0</number>
+        </property>
        </widget>
       </item>
       <item row="1" column="1">
@@ -181,6 +194,9 @@
         </property>
         <property name="text">
          <string>Number of Scans:</string>
+        </property>
+        <property name="margin">
+         <number>0</number>
         </property>
        </widget>
       </item>
@@ -224,6 +240,9 @@
         <property name="text">
          <string>Scan Delay [s]:</string>
         </property>
+        <property name="margin">
+         <number>0</number>
+        </property>
        </widget>
       </item>
       <item row="3" column="1">
@@ -261,6 +280,19 @@
      <widget class="Line" name="line_2">
       <property name="orientation">
        <enum>Qt::Horizontal</enum>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QLabel" name="label_status">
+      <property name="font">
+       <font>
+        <family>Arial</family>
+        <pointsize>12</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>Welcome to SRX Autosave!</string>
       </property>
      </widget>
     </item>
