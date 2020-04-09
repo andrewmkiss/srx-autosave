@@ -7,18 +7,23 @@ from api import (get_current_scanid, check_inputs, xrf_loop, loop_sleep)
 
 from PyQt5 import QtWidgets
 from PyQt5 import uic
-from PyQt5.QtCore import QThread, pyqtSignal
+from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from PyQt5.QtWidgets import QFileDialog
+
+# For Hi-DPI monitors
+QtWidgets.QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
+QtWidgets.QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
 
 
 class MainWindow(QtWidgets.QMainWindow):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        uic.loadUi("gui/main_form.ui", self)
+        path = Path(__file__).parent
+        uic.loadUi(path / "gui/main_form.ui", self)
 
-        self.label_logo.setProperty("pixmap", "gui/5-ID_TopAlign.png")
-        self.setProperty("windowIcon", "gui/5-ID_TopAlign.png")
+        self.label_logo.setProperty("pixmap", path / "gui/5-ID_TopAlign.png")
+        self.setProperty("windowIcon", path / "gui/5-ID_TopAlign.png")
 
         self.pushButton_stop.setProperty("enabled", False)
         self.setContentsMargins(20, 0, 20, 20)
@@ -73,7 +78,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # Check the scan parameters
         self.get_scan_parameters()
-        # (self.start_id, self.wd, self.N, self.dt) = check_inputs(self.start_id, self.wd, self.N, self.dt)
         tmp = check_inputs(self.start_id, self.wd, self.N, self.dt)
         self.start_id = tmp[0]
         self.wd = tmp[1]
