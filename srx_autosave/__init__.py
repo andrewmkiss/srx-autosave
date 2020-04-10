@@ -72,6 +72,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.lineEdit_delay.setProperty("enabled", value)
         self.pushButton_browse.setProperty("enabled", value)
         self.pushButton_currentid.setProperty("enabled", value)
+        self.pushButton_plus1.setProperty("enabled", value)
 
     def start_loop(self):
         # Check for a thread running the main loop
