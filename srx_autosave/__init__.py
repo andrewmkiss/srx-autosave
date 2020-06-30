@@ -1,7 +1,10 @@
 # Import packages
 import os
 import sys
+import h5py
+import numpy as np
 from pathlib import Path
+from tifffile import imsave
 
 from api import (get_current_scanid, check_inputs, xrf_loop, loop_sleep)
 
@@ -33,6 +36,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.pushButton_browse.released.connect(self.get_dir)
         self.pushButton_start.released.connect(self.start_loop)
         self.pushButton_stop.released.connect(self.stop_loop)
+        self.pushButton_batch.released.connect(self.get_conf_dirs)
 
     def update_scanid(self):
         self.lineEdit_startid.setProperty("text", str(get_current_scanid()))
@@ -124,6 +128,45 @@ class MainWindow(QtWidgets.QMainWindow):
     def update_status(self, x):
         self.label_status.setProperty("text", x)
         return
+    
+    def get_dirs_qt(parent=None, caption=None, directory=""):
+        '''
+        Provide a dialog to open many directories
+        '''
+        w = Qt.QFileDialog(parent, caption, directory)
+        w.setFileMode(Qt.QFileDialog.DirectoryOnly)
+        w.setOption(Qt.QFileDialog.ShowDirsOnly)
+        w.setOption(Qt.QFileDialog.DontUseNativeDialog)
+    
+        child = w.findChild(Qt.QListView, "listView")
+        if child:
+            child.setSelectionMode(Qt.QAbstractItemView.MultiSelection)
+    
+        child = w.findChild(Qt.QTreeView)
+        if child:
+            child.setSelectionMode(Qt.QAbstractItemView.MultiSelection)
+    
+        w.exec_()
+        return w.selectedFiles()
+    
+    def get_conf_dirs(self):
+       # Create Qt context
+       # app = Qt.QApplication([])
+        # Then do what is needed...
+        confFile = Qt.QFileDialog.getOpenFileName(None,
+                                                  "Choose the config file")
+        confFile = confFile[0]
+        if not confFile:
+            print("Configuration file not selected. Exiting.")
+            sys.exit(1)
+
+        directories = get_dirs_qt(None, "Please select the directories to fit")
+    
+        print("Configuration file: " + confFile)
+        print("Directories to fit:")
+        for d in directories:
+            print("-" + d)   
+        return (confFile)
 
 
 class Tloop(QThread):
@@ -204,3 +247,36 @@ def autosave_xrf(start_id, wd="", N=1000, dt=60):
     except KeyboardInterrupt:
         print("\n\nExiting SRX AutoSave.")
         pass
+
+def autoroi_xrf(scanid):
+    """
+    SRX auto_roi
+
+    Automatic generate roi based on the specified elements
+
+    Parameters
+    ----------
+    scanid : int
+        Scan ID
+   
+    Returns
+    -------
+    None
+
+    Examples
+    --------
+    Start generating rois from the saved h5 files and saving them into the user's directory
+    >>> autoroi_xrf(1234)
+
+    """
+    #load h5 file (autosaved)
+    element_roi = {'Ca_k':[350,390], "Fe_k": [620,660], "Ni_k": [730,770], "Cu_k": [780, 820], "Zn_k": [780, 820], "Pt_l": [920,960], "Au_l": [1140, 1180]};
+    
+    print("export rois...")
+    with h5py.File(f"scan2D_{scanid}_*.h5") as f:
+        for x in element_roi:
+            roi = np.sum(f['xrfmap/detsum/counts'][:,:,element_roi[x][0]:element_roi[x][1]], axis=2)
+            sclr_I0 = f['xrfmap/scalers/val'][:,:,0]
+            roi_norm = roi/sclr_I0
+            imsave(f'roi_{scanid}_{x}.tiff', roi_norm, dtype="float32")
+    print("finish exporting rois")
