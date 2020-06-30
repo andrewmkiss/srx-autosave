@@ -13,6 +13,11 @@ from PyQt5 import uic
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from PyQt5.QtWidgets import QFileDialog
 
+try:
+    from pyxrf import pyxrf_batch
+except ImportError:
+    print("Error importing pyXRF. Continuing without import.")
+
 # For Hi-DPI monitors
 QtWidgets.QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
 QtWidgets.QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
@@ -165,8 +170,10 @@ class MainWindow(QtWidgets.QMainWindow):
         print("Configuration file: " + confFile)
         print("Directories to fit:")
         for d in directories:
-            print("-" + d)   
-        return (confFile)
+            print("-" + d)
+            
+        pyxrf_batch(param_file_name = confFile, data_files = directories, save_tiff=True, scaler_name="I0")
+        return
 
 
 class Tloop(QThread):

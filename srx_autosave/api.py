@@ -186,6 +186,7 @@ def xrf_loop(start_id, N, gui=None):
                 try:
                     # db[scanid].stop['time']
                     make_hdf(scanid, completed_scans_only=True)
+                    autoroi_xrf(scanid)
                 except Exception as ex:
                     print(ex)
                     pass
