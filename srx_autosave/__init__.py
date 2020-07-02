@@ -41,7 +41,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.pushButton_browse.released.connect(self.get_dir)
         self.pushButton_start.released.connect(self.start_loop)
         self.pushButton_stop.released.connect(self.stop_loop)
-        self.pushButton_batch.released.connect(self.get_conf_dirs)
+        self.pushButton_batchfit.released.connect(self.get_conf_H5_dirs)
 
     def update_scanid(self):
         self.lineEdit_startid.setProperty("text", str(get_current_scanid()))
@@ -134,45 +134,26 @@ class MainWindow(QtWidgets.QMainWindow):
         self.label_status.setProperty("text", x)
         return
     
-    def get_dirs_qt(parent=None, caption=None, directory=""):
-        '''
-        Provide a dialog to open many directories
-        '''
-        w = Qt.QFileDialog(parent, caption, directory)
-        w.setFileMode(Qt.QFileDialog.DirectoryOnly)
-        w.setOption(Qt.QFileDialog.ShowDirsOnly)
-        w.setOption(Qt.QFileDialog.DontUseNativeDialog)
-    
-        child = w.findChild(Qt.QListView, "listView")
-        if child:
-            child.setSelectionMode(Qt.QAbstractItemView.MultiSelection)
-    
-        child = w.findChild(Qt.QTreeView)
-        if child:
-            child.setSelectionMode(Qt.QAbstractItemView.MultiSelection)
-    
-        w.exec_()
-        return w.selectedFiles()
-    
-    def get_conf_dirs(self):
+    def get_conf_H5_dirs(self):
        # Create Qt context
        # app = Qt.QApplication([])
         # Then do what is needed...
-        confFile = Qt.QFileDialog.getOpenFileName(None,
+        confFile = QFileDialog.getOpenFileName(None,
                                                   "Choose the config file")
         confFile = confFile[0]
         if not confFile:
             print("Configuration file not selected. Exiting.")
             sys.exit(1)
-
-        directories = get_dirs_qt(None, "Please select the directories to fit")
+        
+        H5Files = QFileDialog.getOpenFileName(None,
+                                                  "Choose the H5 files to be fitted")
     
         print("Configuration file: " + confFile)
-        print("Directories to fit:")
-        for d in directories:
+        print("H5 files to fit:")
+        for d in H5Files:
             print("-" + d)
             
-        pyxrf_batch(param_file_name = confFile, data_files = directories, save_tiff=True, scaler_name="I0")
+        pyxrf_batch(param_file_name = confFile, data_files = H5Files, save_tiff=True, scaler_name="I0")
         return
 
 
