@@ -12,11 +12,15 @@ from PyQt5 import QtWidgets
 from PyQt5 import uic
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from PyQt5.QtWidgets import QFileDialog
+import logging
 
 try:
-    from pyxrf import pyxrf_batch
+    from pyxrf.model.command_tools import pyxrf_batch
 except ImportError:
     print("Error importing pyXRF. Continuing without import.")
+
+#from dask.distributed import Client
+#client = Client(processes=True, silence_logs=logging.ERROR)
 
 # For Hi-DPI monitors
 QtWidgets.QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
@@ -138,22 +142,26 @@ class MainWindow(QtWidgets.QMainWindow):
        # Create Qt context
        # app = Qt.QApplication([])
         # Then do what is needed...
-        confFile = QFileDialog.getOpenFileName(None,
-                                                  "Choose the config file")
+        filter = "JSON (*.json)"
+        confFile = QFileDialog()
+        confFile.setFileMode(QFileDialog.ExistingFiles)
+        confFile = confFile.getOpenFileName(self, "Choose the config file", "/home/xf05id1/current_user_data/", filter)
         confFile = confFile[0]
         if not confFile:
             print("Configuration file not selected. Exiting.")
             sys.exit(1)
         
-        H5Files = QFileDialog.getOpenFileName(None,
-                                                  "Choose the H5 files to be fitted")
+        filter = "H% (*.h5)"
+        H5Files = QFileDialog()
+        H5Files.setFileMode(QFileDialog.ExistingFiles)
+        H5Files, mask = H5Files.getOpenFileNames(self, "Choose the H5 files to be fitted", "/home/xf05id1/current_user_data/", filter)
     
         print("Configuration file: " + confFile)
         print("H5 files to fit:")
         for d in H5Files:
             print("-" + d)
             
-        pyxrf_batch(param_file_name = confFile, data_files = H5Files, save_tiff=True, scaler_name="I0")
+        pyxrf_batch(param_file_name = confFile, data_files = H5Files, scaler_name = "i0")
         return
 
 
