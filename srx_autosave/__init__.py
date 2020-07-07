@@ -1,12 +1,10 @@
 # Import packages
 import os
 import sys
-import h5py
 import numpy as np
 from pathlib import Path
-from tifffile import imsave
 
-from api import (get_current_scanid, check_inputs, xrf_loop, loop_sleep)
+from api import (get_current_scanid, check_inputs, xrf_loop, autoroi_xrf, loop_sleep)
 
 from PyQt5 import QtWidgets
 from PyQt5 import uic
@@ -244,35 +242,3 @@ def autosave_xrf(start_id, wd="", N=1000, dt=60):
         print("\n\nExiting SRX AutoSave.")
         pass
 
-def autoroi_xrf(scanid):
-    """
-    SRX auto_roi
-
-    Automatic generate roi based on the specified elements
-
-    Parameters
-    ----------
-    scanid : int
-        Scan ID
-   
-    Returns
-    -------
-    None
-
-    Examples
-    --------
-    Start generating rois from the saved h5 files and saving them into the user's directory
-    >>> autoroi_xrf(1234)
-
-    """
-    #load h5 file (autosaved)
-    element_roi = {'Ca_k':[350,390], "Fe_k": [620,660], "Ni_k": [730,770], "Cu_k": [780, 820], "Zn_k": [780, 820], "Pt_l": [920,960], "Au_l": [1140, 1180]};
-    
-    print("export rois...")
-    with h5py.File(f"scan2D_{scanid}_*.h5") as f:
-        for x in element_roi:
-            roi = np.sum(f['xrfmap/detsum/counts'][:,:,element_roi[x][0]:element_roi[x][1]], axis=2)
-            sclr_I0 = f['xrfmap/scalers/val'][:,:,0]
-            roi_norm = roi/sclr_I0
-            imsave(f'roi_{scanid}_{x}.tiff', roi_norm, dtype="float32")
-    print("finish exporting rois")

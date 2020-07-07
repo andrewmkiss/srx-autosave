@@ -3,7 +3,9 @@ import numpy as np
 import time as ttime
 import os
 import glob
+import h5py
 from databroker import Broker
+from tifffile import imsave
 
 try:
     from pyxrf.api import *
@@ -146,6 +148,40 @@ def check_inputs(start_id, wd, N, dt):
 
     return (start_id, wd, N, dt)
 
+
+def autoroi_xrf(scanid):
+    """
+    SRX auto_roi
+
+    Automatic generate roi based on the specified elements
+
+    Parameters
+    ----------
+    scanid : int
+        Scan ID
+   
+    Returns
+    -------
+    None
+
+    Examples
+    --------
+    Start generating rois from the saved h5 files and saving them into the user's directory
+    >>> autoroi_xrf(1234)
+
+    """
+    #load h5 file (autosaved)
+    element_roi = {'Ca_k':[350,390], "Fe_k": [620,660], "Ni_k": [730,770], "Cu_k": [780, 820], "Zn_k": [780, 820], "Pt_l": [920,960], "Au_l": [1140, 1180]};
+    
+    print("export rois...")
+    h5file = glob.glob(f"scan2D_{scanid}_*.h5")
+    with h5py.File(h5file) as f:
+        for x in element_roi:
+            roi = np.sum(f['xrfmap/detsum/counts'][:,:,element_roi[x][0]:element_roi[x][1]], axis=2)
+            sclr_I0 = f['xrfmap/scalers/val'][:,:,0]
+            roi_norm = roi/sclr_I0
+            imsave(f'roi_{scanid}_{x}.tiff', roi_norm, dtype="float32")
+    print("finish exporting rois")
 
 def xrf_loop(start_id, N, gui=None):
     num = np.arange(start_id, start_id + N, 1)
