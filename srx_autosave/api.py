@@ -2,20 +2,29 @@
 import numpy as np
 import time as ttime
 import os
+import sys
 import glob
 import h5py
 from databroker import Broker
 from tifffile import imsave
+import logging
 
 try:
-    from pyxrf.api import *
+    from pyxrf.api_dev import *
 except ImportError:
     print("Error importing pyXRF. Continuing without import.")
+
 
 try:
     from epics import caget
 except ImportError:
     print("Error importing caget. Continuing without import.")
+
+
+# Set logging level to WARNING in order to prevent a flood of messages from 'epics'
+#   Feel free to change the logging level as needed.
+logger = logging.getLogger()
+logger.setLevel(logging.WARNING)
 
 
 """
@@ -173,15 +182,26 @@ def autoroi_xrf(scanid):
     #load h5 file (autosaved)
     element_roi = {'Ca_k':[350,390], "Fe_k": [620,660], "Ni_k": [730,770], "Cu_k": [780, 820], "Zn_k": [780, 820], "Pt_l": [920,960], "Au_l": [1140, 1180]};
     
-    print("export rois...")
+    print("start exporting rois: Ca, Fe, Ni, Cu, Zn, Pt, Au.")
     h5file = glob.glob(f"scan2D_{scanid}_*.h5")
-    with h5py.File(h5file) as f:
+    if not len(h5file) == 0:
+        f = h5py.File(h5file[0])
+        if not os.path.exists(f"scan_{scanid}"):
+            try:
+                os.mkdir(f"scan_{scanid}_rois")
+            except OSError:
+                print(f"creation of folder scan_{scanid}_rois failed.")
+            else:
+                print(f"folder scan_{scanid}_rois created.")
         for x in element_roi:
             roi = np.sum(f['xrfmap/detsum/counts'][:,:,element_roi[x][0]:element_roi[x][1]], axis=2)
             sclr_I0 = f['xrfmap/scalers/val'][:,:,0]
             roi_norm = roi/sclr_I0
-            imsave(f'roi_{scanid}_{x}.tiff', roi_norm, dtype="float32")
-    print("finish exporting rois")
+            imsave(f'scan_{scanid}_rois/roi_{scanid}_{x}.tiff', roi_norm.astype("float32"), dtype=np.float32)
+        print("finish exporting rois")
+    else:
+        print(f"scan2D_{scanid} can not be found!")
+        pass
 
 def xrf_loop(start_id, N, gui=None):
     num = np.arange(start_id, start_id + N, 1)
@@ -221,13 +241,15 @@ def xrf_loop(start_id, N, gui=None):
                 # Check if the scan is done
                 try:
                     # db[scanid].stop['time']
-                    make_hdf(scanid, completed_scans_only=True)
+                    make_hdf(scanid)
+                    ttime.sleep(5)
                     autoroi_xrf(scanid)
                 except Exception as ex:
                     print(ex)
                     pass
-            else:
-                print("XRF HDF5 already created.")
+            else:   
+                print(f"XRF HDF5 already created.")
+
         else:
             print()
     return

@@ -1,7 +1,6 @@
 # Import packages
 import os
 import sys
-import numpy as np
 from pathlib import Path
 
 from api import (get_current_scanid, check_inputs, xrf_loop, autoroi_xrf, loop_sleep)
@@ -10,19 +9,11 @@ from PyQt5 import QtWidgets
 from PyQt5 import uic
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from PyQt5.QtWidgets import QFileDialog
-import logging
 
 try:
-    from pyxrf.model.command_tools import pyxrf_batch
+    from pyxrf.api_dev import pyxrf_batch
 except ImportError:
     print("Error importing pyXRF. Continuing without import.")
-
-#from dask.distributed import Client
-#client = Client(processes=True, silence_logs=logging.ERROR)
-
-# For Hi-DPI monitors
-QtWidgets.QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
-QtWidgets.QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -194,12 +185,6 @@ class Tloop(QThread):
             pass
 
 
-app = QtWidgets.QApplication(sys.argv)
-window = MainWindow()
-window.show()
-app.exec_()
-
-
 # %% Main loop for XRF maps -> HDF5
 def autosave_xrf(start_id, wd="", N=1000, dt=60):
     """
@@ -242,3 +227,18 @@ def autosave_xrf(start_id, wd="", N=1000, dt=60):
         print("\n\nExiting SRX AutoSave.")
         pass
 
+
+def run_autosave():
+
+    # For Hi-DPI monitors
+    QtWidgets.QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
+    QtWidgets.QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
+
+    app = QtWidgets.QApplication(sys.argv)
+    window = MainWindow()
+    window.show()
+    sys.exit(app.exec_())
+
+
+if __name__ == "__main__":
+    run_autosave()
