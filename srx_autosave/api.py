@@ -203,6 +203,43 @@ def autoroi_xrf(scanid):
         print(f"scan2D_{scanid} can not be found!")
         pass
 
+
+def add_encoder_data(scanid):
+    # This is for old metadata style and flyscans in x only
+    # Get scan ID
+    # _, scanid, _, _ = fn.split('_')
+    scanid = int(scanid)
+    ls_fn = glob.glob(f'scan2D_{scanid}*.h5')
+    if len(ls_fn) == 1:
+        fn = ls_fn[0]
+    else:
+        print('Cannot identify which file to add encoder data.')
+        return
+
+    # Get scan header
+    h = db[int(scanid)]
+    scanid = int(h.start['scan_id'])
+    start_doc = h.start
+    
+    # Get position data from scan
+    y_pos = h.data('enc2', stream_name='stream0', fill=True)
+    y_pos = np.array(list(y_pos))
+
+    # Write to file
+    try:
+        with h5py.File(fn, 'a') as f:
+            # pos = f['/xrfmap/positions/pos']
+            pos = np.array(f['/xrfmap/positions/pos'])
+            pos_name = f['/xrfmap/positions/name']
+
+            ind = list(pos_name).index(b'y_pos')  # This should be 1, but good to verify
+            pos[ind, :, :] = y_pos
+            # pos[ind, :, :] = y_pos[np.newaxis, ...]
+            f['/xrfmap/positions/pos'][...] = pos
+    except:
+        print(f'Error writing to file: {fn}')
+
+
 def xrf_loop(start_id, N, gui=None):
     num = np.arange(start_id, start_id + N, 1)
     for i in range(N):
@@ -242,7 +279,9 @@ def xrf_loop(start_id, N, gui=None):
                 try:
                     # db[scanid].stop['time']
                     make_hdf(scanid, completed_scans_only=True)
-                    ttime.sleep(5)
+                    ttime.sleep(1)
+                    add_encoder_data(scanid)
+                    ttime.sleep(1)
                     autoroi_xrf(scanid)
                 except Exception as ex:
                     print(ex)
