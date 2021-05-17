@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 
 from api import (get_current_scanid, check_inputs, xrf_loop, autoroi_xrf, loop_sleep)
-
+from new_makehdf import new_makehdf
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
@@ -15,6 +15,19 @@ try:
 except ImportError:
     print("Error importing pyXRF. Continuing without import.")
 
+# try:
+#     from pyxrf.api_dev import db
+# except ImportError:
+#     db = None
+#     print("Error importing pyXRF. Continuing without import.")
+# 
+# if not db:
+#     # Register the data broker
+#     try:
+#          db = Broker.named("srx")
+#     except AttributeError:
+#          db = Broker.named("temp")
+#          print("Using temporary databroker.")
 
 class MainWindow(QtWidgets.QMainWindow):
 

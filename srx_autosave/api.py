@@ -8,11 +8,21 @@ import h5py
 from databroker import Broker
 from tifffile import imsave
 import logging
+from new_makehdf import new_makehdf
 
 try:
-    from pyxrf.api_dev import *
+   from pyxrf.api_dev import db
 except ImportError:
+    db = None
     print("Error importing pyXRF. Continuing without import.")
+
+if not db:
+    # Register the data broker
+    try:
+         db = Broker.named("srx")
+    except AttributeError:
+         db = Broker.named("temp")
+         print("Using temporary databroker.")
 
 
 try:
@@ -34,14 +44,6 @@ Helper functions for SRX Autosave
 
 Andy Kiss
 """
-
-
-# Register the data broker
-try:
-    db = Broker.named("srx")
-except AttributeError:
-    db = Broker.named("temp")
-    print("Using temporary databroker.")
 
 
 # ----------------------------------------------------------------------
@@ -264,11 +266,11 @@ def xrf_loop(start_id, N, gui=None):
 
         # Output to command line that we are on a given scan
         print(scanid, end="\t", flush=True)
-        print(h.start["plan_name"], end="\t", flush=True)  # This might change
+        print(h.start['scan']['type'], end="\t\t", flush=True)  # This might change
 
         # Check if fly scan
         # Should be more generic, if XRF scan
-        if h.start["plan_name"] == "scan_and_fly":
+        if h.start['scan']['type'] == 'XRF_FLY':
             # fname = filelist_h5[i]
             # Check if the file noes not exist
             # if not os.path.isfile(fname):
@@ -278,10 +280,11 @@ def xrf_loop(start_id, N, gui=None):
                 # Check if the scan is done
                 try:
                     # db[scanid].stop['time']
-                    make_hdf(scanid, completed_scans_only=True)
+                    # make_hdf(scanid, completed_scans_only=True)
+                    new_makehdf(scanid)
                     ttime.sleep(1)
-                    add_encoder_data(scanid)
-                    ttime.sleep(1)
+                    #add_encoder_data(scanid)
+                    #ttime.sleep(1)
                     autoroi_xrf(scanid)
                 except Exception as ex:
                     print(ex)
