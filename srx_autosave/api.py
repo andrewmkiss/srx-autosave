@@ -266,7 +266,11 @@ def xrf_loop(start_id, N, gui=None):
 
         # Output to command line that we are on a given scan
         print(scanid, end="\t", flush=True)
-        print(h.start['scan']['type'], end="\t\t", flush=True)  # This might change
+        try:
+            print(h.start['scan']['type'], end="\t\t", flush=True)  # This might change
+        except:
+            print('UNKNOWN SCAN TYPE. SKIPPING')
+            continue
 
         # Check if fly scan
         # Should be more generic, if XRF scan
