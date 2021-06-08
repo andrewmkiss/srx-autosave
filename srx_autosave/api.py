@@ -5,7 +5,13 @@ import os
 import sys
 import glob
 import h5py
-from databroker import Broker
+import traceback
+# from databroker import Broker
+try:
+    from databroker.v0 import Broker
+except ModuleNotFoundError:
+    from databroker import Broker
+
 from tifffile import imsave
 import logging
 from new_makehdf import new_makehdf
@@ -290,8 +296,8 @@ def xrf_loop(start_id, N, gui=None):
                     #add_encoder_data(scanid)
                     #ttime.sleep(1)
                     autoroi_xrf(scanid)
-                except Exception as ex:
-                    print(ex)
+                except Exception:
+                    traceback.print_exc()
                     pass
             else:   
                 print(f"XRF HDF5 already created.")
