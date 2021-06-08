@@ -4,11 +4,22 @@ import pyxrf
 from pyxrf.model.scan_metadata import *
 from pyxrf.core.utils import *
 from pyxrf.model.load_data_from_db import _get_fpath_not_existing, helper_encode_list
-from databroker import Broker
-
+#from databroker import Broker
+#db = Broker.named("srx")
+try:
+    from pyxrf.api_dev import make_hdf, db
+except ImportError:
+    db = None
+    print("Error importing pyXRF. Continuing without import.") 
+if not db:
+    # Register the data broker
+    try:
+        db = Broker.named("srx")
+    except AttributeError:
+        db = Broker.named("temp")
+        print("Using temporary databroker.")
 
 pyxrf_version = pyxrf.__version__
-db = Broker.named("srx")
 
 
 def _extract_metadata_from_header(hdr):
@@ -117,9 +128,13 @@ def _extract_metadata_from_header(hdr):
 
 
 def new_makehdf(scanid=-1, create_each_det=False):
+
     # Get scan header
     h = db[int(scanid)]
     scanid = int(h.start['scan_id'])
+
+    #if h.stop["exit_status"] == "success"
+
     start_doc = h.start
     scan_doc = h.start['scan']
     
