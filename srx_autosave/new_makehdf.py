@@ -7,10 +7,10 @@ from pyxrf.model.load_data_from_db import _get_fpath_not_existing, helper_encode
 #from databroker import Broker
 #db = Broker.named("srx")
 try:
-    from pyxrf.api_dev import make_hdf, db
-except ImportError:
-    db = None
-    print("Error importing pyXRF. Continuing without import.") 
+    from databroker.v0 import Broker
+except ModuleNotFoundError:
+    from databroker import Broker
+
 if not db:
     # Register the data broker
     try:
