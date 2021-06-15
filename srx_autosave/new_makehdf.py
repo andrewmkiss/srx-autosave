@@ -11,6 +11,12 @@ try:
 except ModuleNotFoundError:
     from databroker import Broker
 
+try:
+   from pyxrf.api_dev import db
+except ImportError:
+    db = None
+    print("Error importing pyXRF. Continuing without import.")
+
 if not db:
     # Register the data broker
     try:
