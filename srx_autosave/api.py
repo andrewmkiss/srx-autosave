@@ -187,10 +187,16 @@ def autoroi_xrf(scanid):
     >>> autoroi_xrf(1234)
 
     """
-    #load h5 file (autosaved)
-    element_roi = {'Ca_k':[350,390], "Fe_k": [620,660], "Ni_k": [730,770], "Cu_k": [780, 820], "Zn_k": [780, 820], "Pt_l": [920,960], "Au_l": [1140, 1180]};
+    # Load h5 file (autosaved)
+    element_roi = {'Ca_k' : [350, 390],
+                   "Fe_k" : [620, 660],
+                   "Ni_k" : [730, 770],
+                   "Cu_k" : [780, 820],
+                   "Zn_k" : [780, 820],
+                   "Pt_l" : [920, 960],
+                   "Au_l" : [1140, 1180]}
     
-    print("start exporting rois: Ca, Fe, Ni, Cu, Zn, Pt, Au.")
+    print("Start exporting ROIs: Ca, Fe, Ni, Cu, Zn, Pt, Au.")
     h5file = glob.glob(f"scan2D_{scanid}_*.h5")
     if not len(h5file) == 0:
         f = h5py.File(h5file[0])
@@ -198,15 +204,15 @@ def autoroi_xrf(scanid):
             try:
                 os.mkdir(f"scan_{scanid}_rois")
             except OSError:
-                print(f"creation of folder scan_{scanid}_rois failed.")
+                print(f"Creation of folder scan_{scanid}_rois failed!")
             else:
-                print(f"folder scan_{scanid}_rois created.")
+                print(f"Folder scan_{scanid}_rois created.")
         for x in element_roi:
-            roi = np.sum(f['xrfmap/detsum/counts'][:,:,element_roi[x][0]:element_roi[x][1]], axis=2)
-            sclr_I0 = f['xrfmap/scalers/val'][:,:,0]
-            roi_norm = roi/sclr_I0
+            roi = np.sum(f['xrfmap/detsum/counts'][:, :, element_roi[x][0]:element_roi[x][1]], axis=2)
+            sclr_I0 = f['xrfmap/scalers/val'][:, :, 0]
+            roi_norm = roi / sclr_I0
             imsave(f'scan_{scanid}_rois/roi_{scanid}_{x}.tiff', roi_norm.astype("float32"), dtype=np.float32)
-        print("finish exporting rois")
+        print("Finished exporting ROIs")
     else:
         print(f"scan2D_{scanid} can not be found!")
         pass
@@ -289,13 +295,14 @@ def xrf_loop(start_id, N, gui=None):
             ):
                 # Check if the scan is done
                 try:
-                    # db[scanid].stop['time']
+                    db[scanid].stop['time']
                     # make_hdf(scanid, completed_scans_only=True)
                     new_makehdf(scanid)
                     ttime.sleep(1)
-                    #add_encoder_data(scanid)
-                    #ttime.sleep(1)
                     autoroi_xrf(scanid)
+                except KeyError:
+                    print('Scan not complete...')
+                    pass
                 except Exception:
                     traceback.print_exc()
                     pass
