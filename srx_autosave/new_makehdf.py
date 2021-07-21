@@ -133,13 +133,16 @@ def _extract_metadata_from_header(hdr):
     return mdata
 
 
-def new_makehdf(scanid=-1, create_each_det=False):
+def new_makehdf(scanid=-1, create_each_det=False, complete_flag = True, slow_pos_stopped=120, fast_pos_stopped=181):
 
     # Get scan header
     h = db[int(scanid)]
     scanid = int(h.start['scan_id'])
 
     #if h.stop["exit_status"] == "success"
+    ##for incomplete scans
+    ##fast_pos_stopped = 181 #flyaxis, normally x-axis
+    ##slow_pos_stopped = 69 #slow axis, normally y-axis
 
     start_doc = h.start
     scan_doc = h.start['scan']
@@ -203,12 +206,20 @@ def new_makehdf(scanid=-1, create_each_det=False):
             slow_pos = np.array([slow_pos,]*c).T
 
         pos_pos = np.zeros((2, r, c))
-        if 'x' in slow_key:
-            pos_pos[1, :, :] = fast_pos
-            pos_pos[0, :, :] = slow_pos
+        if complete_flag == False:
+            if 'x' in slow_key:
+                pos_pos[1, :, :] = fast_pos
+                pos_pos[0, :, :] = slow_pos
+            else:
+                pos_pos[0, :, :] = fast_pos_stopped
+                pos_pos[1, :, :] = slow_pos_stopped
         else:
-            pos_pos[0, :, :] = fast_pos
-            pos_pos[1, :, :] = slow_pos
+            if 'x' in slow_key:
+                pos_pos[1, :, :] = fast_pos
+                pos_pos[0, :, :] = slow_pos
+            else:
+                pos_pos[0, :, :] = fast_pos
+                pos_pos[1, :, :] = slow_pos
         pos_name = ['x_pos', 'y_pos']
 
         # Get detector data
