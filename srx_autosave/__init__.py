@@ -3,6 +3,7 @@ import os
 import sys
 from pathlib import Path
 
+import _version
 from api import (get_current_scanid, check_inputs, xrf_loop, autoroi_xrf, loop_sleep)
 from new_makehdf import new_makehdf
 from PyQt5 import QtWidgets
@@ -15,19 +16,6 @@ try:
 except ImportError:
     print("Error importing pyXRF. Continuing without import.")
 
-# try:
-#     from pyxrf.api_dev import db
-# except ImportError:
-#     db = None
-#     print("Error importing pyXRF. Continuing without import.")
-# 
-# if not db:
-#     # Register the data broker
-#     try:
-#          db = Broker.named("srx")
-#     except AttributeError:
-#          db = Broker.named("temp")
-#          print("Using temporary databroker.")
 
 class MainWindow(QtWidgets.QMainWindow):
 
@@ -38,6 +26,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.label_logo.setProperty("pixmap", path / "gui/5-ID_TopAlign.png")
         self.setProperty("windowIcon", path / "gui/5-ID_TopAlign.png")
+
+        ver = get_versions()
+        ver_str = f"{ver['version'][:3]} {ver['date'].split('T')[0]}"
+        self.label_version.setProperty("text", ver_str)
 
         self.pushButton_stop.setProperty("enabled", False)
         self.setContentsMargins(20, 0, 20, 20)
@@ -88,6 +80,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.pushButton_browse.setProperty("enabled", value)
         self.pushButton_currentid.setProperty("enabled", value)
         self.pushButton_plus1.setProperty("enabled", value)
+        self.pushButton_batchfit.setProperty("enabled", value)
 
     def start_loop(self):
         # Check for a thread running the main loop

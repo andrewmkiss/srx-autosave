@@ -132,8 +132,7 @@ def _extract_metadata_from_header(hdr):
     return mdata
 
 
-def new_makehdf(scanid=-1,
-                create_each_det=False)
+def new_makehdf(scanid=-1, create_each_det=False):
 
     # Get scan header
     h = db[int(scanid)]
