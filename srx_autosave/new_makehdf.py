@@ -4,8 +4,7 @@ import pyxrf
 from pyxrf.model.scan_metadata import *
 from pyxrf.core.utils import *
 from pyxrf.model.load_data_from_db import _get_fpath_not_existing, helper_encode_list
-#from databroker import Broker
-#db = Broker.named("srx")
+
 try:
     from databroker.v0 import Broker
 except ModuleNotFoundError:
@@ -133,19 +132,16 @@ def _extract_metadata_from_header(hdr):
     return mdata
 
 
-def new_makehdf(scanid=-1, create_each_det=False, complete_flag = True, slow_pos_stopped=120, fast_pos_stopped=181):
+def new_makehdf(scanid=-1,
+                create_each_det=False)
 
     # Get scan header
     h = db[int(scanid)]
     scanid = int(h.start['scan_id'])
 
-    #if h.stop["exit_status"] == "success"
-    ##for incomplete scans
-    ##fast_pos_stopped = 181 #flyaxis, normally x-axis
-    ##slow_pos_stopped = 69 #slow axis, normally y-axis
-
     start_doc = h.start
     scan_doc = h.start['scan']
+    stop_doc = h.stop
     
     # Check if new type of metadata
     if 'md_version' not in h.start:
@@ -161,6 +157,7 @@ def new_makehdf(scanid=-1, create_each_det=False, complete_flag = True, slow_pos
             dets.append('xs2')
     except KeyError:
         # AMK forgot to add detectors to step scans
+        # This is fixed, but left in for those scans
         if scan_doc['type'] == 'XRF_STEP':
             dets.append('xs')
 
@@ -205,31 +202,23 @@ def new_makehdf(scanid=-1, create_each_det=False, complete_flag = True, slow_pos
             slow_pos = np.array(list(slow_pos))
             slow_pos = np.array([slow_pos,]*c).T
 
-        pos_pos = np.zeros((2, r, c))
-        if complete_flag == False:
-            if 'x' in slow_key:
-                pos_pos[1, :, :] = fast_pos
-                pos_pos[0, :, :] = slow_pos
-            else:
-                pos_pos[0, :, :] = fast_pos_stopped
-                pos_pos[1, :, :] = slow_pos_stopped
+        num_events = stop_doc['num_events']['stream0']
+        # pos_pos = np.zeros((2, r, c))
+        pos_pos = np.zeros((2, num_events, c))
+        if 'x' in slow_key:
+            pos_pos[1, :, :] = fast_pos
+            pos_pos[0, :, :] = slow_pos
         else:
-            if 'x' in slow_key:
-                pos_pos[1, :, :] = fast_pos
-                pos_pos[0, :, :] = slow_pos
-            else:
-                pos_pos[0, :, :] = fast_pos
-                pos_pos[1, :, :] = slow_pos
+            pos_pos[0, :, :] = fast_pos
+            pos_pos[1, :, :] = slow_pos
         pos_name = ['x_pos', 'y_pos']
 
         # Get detector data
         if 'xs' in dets:
-        # if 'fluor' in h.table('stream0').keys():
             d_xs = np.array(list(h.data('fluor', stream_name='stream0', fill=True)))
             N_xs = d_xs.shape[2]
             d_xs_sum = np.squeeze(np.sum(d_xs, axis=2))
         if 'xs2' in dets:
-        # if 'fluor_xs2' in h.table('stream0').keys():
             d_xs2 = np.array(list(h.data('fluor_xs2', stream_name='stream0', fill=True)))
             N_xs2 = d_xs2.shape[2]
             d_xs2_sum = np.squeeze(np.sum(d_xs2, axis=2))
@@ -260,12 +249,23 @@ def new_makehdf(scanid=-1, create_each_det=False, complete_flag = True, slow_pos
         slow_pos = np.array(list(slow_pos))
 
         # Reshape motor positions
+        num_events = stop_doc['num_events']['primary']
         r, c = scan_doc['shape']
-        fast_pos = np.reshape(fast_pos, (r, c))
-        slow_pos = np.reshape(slow_pos, (r, c))
+        if num_events != (r * c):
+            num_rows = num_events // c  + 1  # number of rows
+            fast_pos = np.zeros((num_rows, c))
+            slow_pos = np.zeros((num_rows, c))
+            for i in range(num_rows):
+                for j in range(c):
+                    fast_pos[i, j] = fast_pos[i*c + j]
+                    slow_pos[i, j] = slow_pos[i*c + j]
+        else:
+            num_rows = r
+            fast_pos = np.reshape(fast_pos, (r, c))
+            slow_pos = np.reshape(slow_pos, (r, c))
 
         # Put into one array for h5 file
-        pos_pos = np.zeros((2, r, c))
+        pos_pos = np.zeros((2, num_rows, c))
         if 'x' in slow_key:
             pos_pos[1, :, :] = fast_pos
             pos_pos[0, :, :] = slow_pos
@@ -283,7 +283,7 @@ def new_makehdf(scanid=-1, create_each_det=False, complete_flag = True, slow_pos
                 N_xs = i
             else:
                 break
-        N_pts = r * c
+        N_pts = num_events
         N_bins= 4096
         if 'xs' in dets:
             d_xs = np.empty((N_xs, N_pts, N_bins))
@@ -293,7 +293,15 @@ def new_makehdf(scanid=-1, create_each_det=False, complete_flag = True, slow_pos
                 d_xs[i, :, :] = np.copy(d)
             del d
             # Reshape data
-            d_xs = np.reshape(d_xs, (N_xs, r, c, N_bins))
+            if num_events != (r * c):
+                tmp = np.zeros((N_xs, num_rows, c, N_bins))
+                for i in range(num_rows):
+                    for j in range(c):
+                        tmp[:, i, j, :] = fast_pos[:, i*c + j, :]
+                d_xs = np.copy(tmp)
+                del tmp
+            else:
+                d_xs = np.reshape(d_xs, (N_xs, r, c, N_bins))
             # Sum data
             d_xs_sum = np.squeeze(np.sum(d_xs, axis=0))
 
@@ -304,17 +312,24 @@ def new_makehdf(scanid=-1, create_each_det=False, complete_flag = True, slow_pos
             if s in keys:
                 sclr_name.append(s)
         sclr = np.array(h.table()[sclr_name].values)
-        # sclr = np.moveaxis(sclr, 0, 1)
-        sclr = np.reshape(sclr, (r, c, len(sclr_name)))
+        # Reshape data
+        if num_events != (r * c):
+            tmp = np.zeros((num_rows, c))
+            for i in range(num_rows):
+                for j in range(c):
+                    tmp[i, j] = fast_pos[i*c + j]
+            sclr = np.copy(tmp)
+            del tmp
+        else:
+            sclr = np.reshape(sclr, (r, c, len(sclr_name)))
 
-        # Consider snake
-        # pos_pos, d_xs, d_xs_sum, sclr
-        if scan_doc['snake'] == 1:
-            pos_pos[:, 1::2, :] = pos_pos[:, 1::2, ::-1]
-            d_xs[:, 1::2, :, :] = d_xs[:, 1::2, ::-1, :]
-            d_xs_sum[1::2, :, :] = d_xs_sum[1::2, ::-1, :]
-            sclr[1::2, :, :] = sclr[1::2, ::-1, :]
-            
+    # Consider snake
+    # pos_pos, d_xs, d_xs_sum, sclr
+    if scan_doc['snake'] == 1:
+        pos_pos[:, 1::2, :] = pos_pos[:, 1::2, ::-1]
+        d_xs[:, 1::2, :, :] = d_xs[:, 1::2, ::-1, :]
+        d_xs_sum[1::2, :, :] = d_xs_sum[1::2, ::-1, :]
+        sclr[1::2, :, :] = sclr[1::2, ::-1, :]
 
     # Write file
     interpath = 'xrfmap'
