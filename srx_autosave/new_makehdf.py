@@ -330,6 +330,16 @@ def new_makehdf(scanid=-1, create_each_det=False):
         d_xs_sum[1::2, :, :] = d_xs_sum[1::2, ::-1, :]
         sclr[1::2, :, :] = sclr[1::2, ::-1, :]
 
+    # Transpose map for y scans
+    if scan_doc['type'] == 'XRF_FLY':
+        if (fast_motor == 'nano_stage_sy'):
+            # Need to swapaxes on pos_pos, d_xs, d_xs_sum, sclr
+            pos_name = pos_name[::-1]
+            pos_pos = np.swapaxes(pos_pos, 1, 2)
+            d_xs = np.swapaxes(d_xs, 1, 2)
+            d_xs_sum = np.swapaxes(d_xs_sum, 0, 1)
+            sclr = np.swapaxes(sclr, 0, 1)
+
     # Write file
     interpath = 'xrfmap'
     for d in dets:
