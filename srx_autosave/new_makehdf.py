@@ -173,6 +173,8 @@ def new_makehdf(scanid=-1, create_each_det=False):
         fast_motor = scan_doc['fast_axis']['motor_name']
         if (fast_motor == 'nano_stage_sx'):
             fast_key = 'enc1'
+        if (fast_motor == 'nano_stage_x'):
+            fast_key = 'enc1'
         elif (fast_motor == 'nano_stage_sy'):
             fast_key = 'enc2'
         elif (fast_motor == 'nano_stage_sz'):
@@ -185,6 +187,8 @@ def new_makehdf(scanid=-1, create_each_det=False):
         if (slow_motor == 'nano_stage_sx'):
             slow_key = 'enc1'
         elif (slow_motor == 'nano_stage_sy'):
+            slow_key = 'enc2'
+        elif (slow_motor == 'nano_stage_y'):
             slow_key = 'enc2'
         elif (slow_motor == 'nano_stage_sz'):
             slow_key = 'enc3'
