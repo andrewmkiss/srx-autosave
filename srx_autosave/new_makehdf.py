@@ -177,6 +177,8 @@ def new_makehdf(scanid=-1, create_each_det=False):
             fast_key = 'enc1'
         elif (fast_motor == 'nano_stage_sy'):
             fast_key = 'enc2'
+        elif (fast_motor == 'nano_stage_y'):
+            fast_key = 'enc2'
         elif (fast_motor == 'nano_stage_sz'):
             fast_key = 'enc3'
         else:
@@ -185,6 +187,8 @@ def new_makehdf(scanid=-1, create_each_det=False):
 
         slow_motor = scan_doc['slow_axis']['motor_name']
         if (slow_motor == 'nano_stage_sx'):
+            slow_key = 'enc1'
+        elif (slow_motor == 'nano_stage_x'):
             slow_key = 'enc1'
         elif (slow_motor == 'nano_stage_sy'):
             slow_key = 'enc2'
@@ -336,7 +340,8 @@ def new_makehdf(scanid=-1, create_each_det=False):
 
     # Transpose map for y scans
     if scan_doc['type'] == 'XRF_FLY':
-        if (fast_motor == 'nano_stage_sy'):
+        if (fast_motor == 'nano_stage_sy' or
+            fast_motor == 'nano_stage_y'):
             # Need to swapaxes on pos_pos, d_xs, d_xs_sum, sclr
             pos_name = pos_name[::-1]
             pos_pos = np.swapaxes(pos_pos, 1, 2)
