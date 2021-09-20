@@ -1,6 +1,7 @@
 import h5py
 import numpy as np
 import pyxrf
+from shutil import copyfile
 from pyxrf.model.scan_metadata import *
 from pyxrf.core.utils import *
 from pyxrf.model.load_data_from_db import _get_fpath_not_existing, helper_encode_list
@@ -418,6 +419,10 @@ def new_makehdf(scanid=-1, create_each_det=False):
             dataGrp.create_dataset('name', data=helper_encode_list(sclr_name))
             dataGrp.create_dataset('val', data=sclr)
 
+        if np.amax(sclr) > 1e9:
+            # Run blurring function for each line that dropped a frame
+            fix_scaler_drop(fn, scan_doc['dwell'])
+
 
 def add_ydata(fn):
     # This is for old metadata style and flyscans in x only
@@ -445,4 +450,42 @@ def add_ydata(fn):
         pos[ind, :, :] = y_pos
         # pos[ind, :, :] = y_pos[np.newaxis, ...]
         f['/xrfmap/positions/pos'][...] = pos
+
+def fix_scaler_drop(fn, dwell):
+    # copy original file with raw data
+    # fn = f'scan2D_{scanid}_{d}_{N}ch.h5'
+    fn_new = f'{fn[:-3]}_fix.h5'
+    copyfile(fn, fn_new)
+
+    # open new file
+    with h5py.File(fn_new, 'a') as f:
+        # find each line with dropped frame
+        # interpath = 'xrfmap'
+        # dataGrp = f.create_group(interpath+'/scalers')
+        # dataGrp.create_dataset('name', data=helper_encode_list(sclr_name))
+        # dataGrp.create_dataset('val', data=sclr)
+        d = f['/xrfmap/scalers/val']
+        r, c, N = d.shape
+        # print(d.shape)
+
+        for i in range(r):
+            # print(i)
+            if np.amax(d[i, :, :]) > 1e9:
+                # find index of first bad value
+                try:
+                    ind = np.where(d[i, :, 1] / 50_000_000 < 0.1*dwell)[0][0]
+                except IndexError:
+                    ind = np.where(d[i, :, 1] > 1e9)[0][0]
+                
+                # isolate good values
+                d1 = np.copy(d[i, :ind, :])
+
+                # Stretch over line
+                d_x = np.linspace(0, ind-1, num=ind)
+                d_interp = np.empty((1, c, N))
+                for j in range(N):
+                    d_interp[0, :, j] = np.interp(np.linspace(0, ind-1, num=c), d_x, d1[:, j])
+
+                # Overwrite in file
+                d[i, :, :] = d_interp
 
