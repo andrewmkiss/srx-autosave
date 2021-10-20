@@ -6,6 +6,12 @@ import sys
 import glob
 import h5py
 import traceback
+import logging
+from reportlab.platypus import SimpleDocTemplate, Image, Paragraph, Table, Spacer
+import reportlab.lib.pagesizes
+from reportlab.lib.styles import ParagraphStyle
+from reportlab.lib.units import inch
+from PIL import pImage
 # from databroker import Broker
 try:
     from databroker.v0 import Broker
@@ -212,11 +218,70 @@ def autoroi_xrf(scanid):
             sclr_I0 = f['xrfmap/scalers/val'][:, :, 0]
             roi_norm = roi / sclr_I0
             imsave(f'scan_{scanid}_rois/roi_{scanid}_{x}.tiff', roi_norm.astype("float32"), dtype=np.float32)
+            
+            # Get brightness range - i.e. darkest and lightest pixels
+            min=np.min(roi_norm)    
+            max=np.max(roi_norm)    
+
+            # Make a LUT (Look-Up Table) to translate image values
+            LUT=np.zeros(256,dtype=np.uint8)
+            LUT[min:max+1]=np.linspace(start=0,stop=255,num=(max-min)+1,endpoint=True,dtype=np.uint8)
+
+            # Apply LUT and save resulting image
+            pImage.fromarray(LUT[roi_norm]).save(f'scan_{scanid}_rois/roi_{scanid}_{x}.png')
         print("Finished exporting ROIs")
     else:
         print(f"scan2D_{scanid} can not be found!")
         pass
 
+def create_pdf(scanid):
+    """
+    Automatic generate pdf report montaging all the saved png
+
+    Parameters
+    ----------
+    scanid : int
+
+    Returns
+    -------
+    None
+
+    """
+
+    elements = []
+    item_tbl_data = []
+    item_tbl_row = []
+        
+    img_list = glob.glob('scan_{scanid}_rois/*.png')
+        
+    for i, file in enumerate(img_list):
+        last_item = len(img_list) - 1
+        if ".png" in file:
+            img = Image((file))
+            img_name = file.replace(".png", "")
+            img_name = str(scanid) + '_' + img_name[-9::]
+                              
+            if len(item_tbl_row) == 2:
+                item_tbl_data.append(item_tbl_row)
+                item_tbl_row = []
+            elif i == last_item:
+                item_tbl_data.append(item_tbl_row)
+                      
+            i_tbl = Table([[img], [Paragraph(img_name, ParagraphStyle("item name style", wordWrap='CJK', fontSize = 18))]])
+            item_tbl_row.append(i_tbl)    
+                    
+    if len(item_tbl_data) > 0:
+        item_tbl = Table(item_tbl_data, colWidths=375)
+        elements.append(item_tbl)
+        elements.append(Spacer(1, inch * 0.5))
+
+    pdf_save_loc = "exp_XRF_log.pdf"
+    doc = SimpleDocTemplate(pdf_save_loc, pagesize = reportlab.lib.pagesizes.A2)
+    try:
+        doc.build(elements)
+    except PermissionError:
+        logging.error("Missing Permission to write. File open in system editor or missing "
+                      "write permissions.") 
 
 def add_encoder_data(scanid):
     # This is for old metadata style and flyscans in x only
@@ -300,6 +365,8 @@ def xrf_loop(start_id, N, gui=None):
                     new_makehdf(scanid)
                     ttime.sleep(1)
                     autoroi_xrf(scanid)
+                    ttime.sleep(5)
+                    create_pdf(scanid)
                 except KeyError:
                     print('Scan not complete...')
                     pass
