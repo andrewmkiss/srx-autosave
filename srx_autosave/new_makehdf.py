@@ -221,12 +221,14 @@ def new_makehdf(scanid=-1, create_each_det=False):
         pos_name = ['x_pos', 'y_pos']
 
         # Let's get the data using the events! Yay!
-        print('get detector data...', end='')
         ev = h.events('stream0', fill=True)
         if 'xs' in dets:
             d_xs = []
         if 'xs2' in dets:
             d_xs2 = []
+        sclr_list = ['i0', 'i0_time', 'time', 'im', 'it']
+        sclr = []
+        sclr_name = []
         while True:
             try:
                 desc = next(ev)
@@ -234,6 +236,13 @@ def new_makehdf(scanid=-1, create_each_det=False):
                     d_xs.append(desc['data']['fluor'])
                 if 'xs2' in dets:
                     d_xs.append(desc['data']['fluor_xs2'])
+                keys = desc['data'].keys()
+                for s in sclr_list:
+                    if s in keys:
+                        tmp = np.array(desc['data'][s])
+                        sclr.append(tmp)
+                        if s not in sclr_name:
+                            sclr_name.append(s)
             except StopIteration:
                 break
             except Exception as e:
@@ -246,32 +255,9 @@ def new_makehdf(scanid=-1, create_each_det=False):
             d_xs2 = np.array(d_xs2)
             N_xs2 = d_xs2.shape[2]
             d_xs2_sum = np.sum(d_xs2, axis=2)
-        print('done')
-
-        # Get detector data
-        # if 'xs' in dets:
-        #     d_xs = np.array(list(h.data('fluor', stream_name='stream0', fill=True)))
-        #     N_xs = d_xs.shape[2]
-        #     d_xs_sum = np.squeeze(np.sum(d_xs, axis=2))
-        # if 'xs2' in dets:
-        #     d_xs2 = np.array(list(h.data('fluor_xs2', stream_name='stream0', fill=True)))
-        #     N_xs2 = d_xs2.shape[2]
-        #     d_xs2_sum = np.squeeze(np.sum(d_xs2, axis=2))
-
-        
-        # Scaler list
-        print('get scaler data...', end='')
-        sclr_list = ['i0', 'i0_time', 'time', 'im', 'it']
-        sclr = []
-        sclr_name = []
-        for s in sclr_list:
-            if s in h.table('stream0').keys():
-                tmp = np.array(list(h.data(s, stream_name='stream0', fill=True)))
-                sclr.append(tmp)
-                sclr_name.append(s)
         sclr = np.array(sclr)
-        sclr = np.moveaxis(sclr, 0, -1)
-        print('done')
+        sclr = np.reshape(sclr, (c, len(sclr_name), -1))
+        sclr = np.moveaxis(sclr, 1, 2)
     if scan_doc['type'] == 'XRF_STEP':
         # Define keys for motor data
         fast_motor = scan_doc['fast_axis']['motor_name']
