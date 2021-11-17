@@ -14,6 +14,7 @@ except ModuleNotFoundError:
 
 from tifffile import imsave
 import logging
+from pyxrf.api import *
 from new_makehdf import new_makehdf
 
 try:
@@ -296,8 +297,8 @@ def xrf_loop(start_id, N, gui=None):
                 # Check if the scan is done
                 try:
                     db[scanid].stop['time']
-                    # make_hdf(scanid, completed_scans_only=True)
-                    new_makehdf(scanid)
+                    make_hdf(scanid, completed_scans_only=True)
+                    # new_makehdf(scanid)
                     ttime.sleep(1)
                     autoroi_xrf(scanid)
                 except KeyError:
