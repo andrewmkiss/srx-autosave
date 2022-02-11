@@ -219,6 +219,7 @@ def autoroi_xrf(scanid):
         for x in element_roi:
             roi = np.sum(f['xrfmap/detsum/counts'][:, :, element_roi[x][0]:element_roi[x][1]], axis=2)
             sclr_I0 = f['xrfmap/scalers/val'][:, :, 0]
+            #sclr_I0 = f['xrfmap/scalers/val'][:, :, 3]
             roi_norm = roi / sclr_I0
             imsave(f'scan_{scanid}_rois/roi_{scanid}_{x}.tiff', roi_norm.astype("float32"), dtype=np.float32)
             percentiles = np.percentile(roi_norm, (0.5, 99.5))
