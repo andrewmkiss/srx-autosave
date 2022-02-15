@@ -11,14 +11,21 @@ from reportlab.platypus import SimpleDocTemplate, Image, Paragraph, Table, Space
 import reportlab.lib.pagesizes
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import inch
+<<<<<<< HEAD
 from PIL import Image
+=======
+from PIL import Image as pImage
+from skimage import exposure
+from PyPDF2 import PdfFileMerger
+from tifffile import imsave
+
+>>>>>>> 911c67d4f91348f8dbc647f4be855d3950d0e935
 # from databroker import Broker
 try:
     from databroker.v0 import Broker
 except ModuleNotFoundError:
     from databroker import Broker
 
-from tifffile import imsave
 import logging
 from new_makehdf import new_makehdf
 
@@ -202,7 +209,7 @@ def autoroi_xrf(scanid):
                    "Pt_l" : [920, 960],
                    "Au_l" : [1140, 1180]}
     
-    print("Start exporting ROIs: Ca, Fe, Ni, Cu, Zn, Pt, Au.")
+    print("Start exporting ROIs: Ca, Fe, Ni, Cu, Zn, Au.")
     h5file = glob.glob(f"scan2D_{scanid}_*.h5")
     if not len(h5file) == 0:
         f = h5py.File(h5file[0])
@@ -210,25 +217,21 @@ def autoroi_xrf(scanid):
             try:
                 os.mkdir(f"scan_{scanid}_rois")
             except OSError:
-                print(f"Creation of folder scan_{scanid}_rois failed!")
+                print(f"Folder scan_{scanid}_rois exist!")
             else:
                 print(f"Folder scan_{scanid}_rois created.")
         for x in element_roi:
             roi = np.sum(f['xrfmap/detsum/counts'][:, :, element_roi[x][0]:element_roi[x][1]], axis=2)
             sclr_I0 = f['xrfmap/scalers/val'][:, :, 0]
+            #sclr_I0 = f['xrfmap/scalers/val'][:, :, 3]
             roi_norm = roi / sclr_I0
             imsave(f'scan_{scanid}_rois/roi_{scanid}_{x}.tiff', roi_norm.astype("float32"), dtype=np.float32)
-            
-            # Get brightness range - i.e. darkest and lightest pixels
-            min=np.min(roi_norm)    
-            max=np.max(roi_norm)    
-
-            # Make a LUT (Look-Up Table) to translate image values
-            LUT=np.zeros(256,dtype=np.uint8)
-            LUT[min:max+1]=np.linspace(start=0,stop=255,num=(max-min)+1,endpoint=True,dtype=np.uint8)
-
-            # Apply LUT and save resulting image
-            pImage.fromarray(LUT[roi_norm]).save(f'scan_{scanid}_rois/roi_{scanid}_{x}.png')
+            percentiles = np.percentile(roi_norm, (0.5, 99.5))
+            scaled = exposure.rescale_intensity(roi_norm,in_range=tuple(percentiles))
+            min=np.min(scaled)    
+            max=np.max(scaled)    
+            roi_scaled = ((scaled-min)/(max-min))*255
+            imsave(f'scan_{scanid}_rois/roi_{scanid}_{x}.png', roi_scaled.astype("uint8"), dtype=np.uint8)
         print("Finished exporting ROIs")
     else:
         print(f"scan2D_{scanid} can not be found!")
@@ -252,36 +255,57 @@ def create_pdf(scanid):
     item_tbl_data = []
     item_tbl_row = []
         
-    img_list = glob.glob('scan_{scanid}_rois/*.png')
-        
+    img_list = glob.glob(f'scan_{scanid}_rois/roi_*.png')
+    
     for i, file in enumerate(img_list):
         last_item = len(img_list) - 1
         if ".png" in file:
             img = Image((file))
             img_name = file.replace(".png", "")
-            img_name = str(scanid) + '_' + img_name[-9::]
-                              
+            img_name = str(scanid) + '_' + img_name[-4::]
+            #grab scan info
+            scaninfo = str(db[scanid].start['scan']['scan_input'])
+
             if len(item_tbl_row) == 2:
                 item_tbl_data.append(item_tbl_row)
                 item_tbl_row = []
             elif i == last_item:
                 item_tbl_data.append(item_tbl_row)
                       
-            i_tbl = Table([[img], [Paragraph(img_name, ParagraphStyle("item name style", wordWrap='CJK', fontSize = 18))]])
+            i_tbl = Table([[img], [Paragraph(img_name + '     SCANINFO:'+ scaninfo, ParagraphStyle("item name style", wordWrap='CJK', fontSize = 10))]])
             item_tbl_row.append(i_tbl)    
                     
     if len(item_tbl_data) > 0:
-        item_tbl = Table(item_tbl_data, colWidths=375)
+        item_tbl = Table(item_tbl_data, colWidths=225)
         elements.append(item_tbl)
         elements.append(Spacer(1, inch * 0.5))
 
-    pdf_save_loc = "exp_XRF_log.pdf"
-    doc = SimpleDocTemplate(pdf_save_loc, pagesize = reportlab.lib.pagesizes.A2)
-    try:
-        doc.build(elements)
-    except PermissionError:
-        logging.error("Missing Permission to write. File open in system editor or missing "
-                      "write permissions.") 
+    pdf_save_loc = "XRF_RoiMaps_log.pdf"
+    pdf_save_rename = "XRF_RoiMaps_log_bk.pdf"
+    pdf_save_tmp = 'tmp.pdf'
+    doc = SimpleDocTemplate(pdf_save_loc, pagesize = reportlab.lib.pagesizes.A4)
+    doc_tmp = SimpleDocTemplate(pdf_save_tmp, pagesize = reportlab.lib.pagesizes.A4)
+    if not os.path.exists(pdf_save_loc):
+        try:
+            doc.build(elements)
+        except PermissionError:
+            logging.error("Missing Permission to write. File open in system editor or missing "
+                          "write permissions.") 
+    else:
+       try:
+            doc_tmp.build(elements)
+            os.rename(pdf_save_loc, pdf_save_rename)
+            pdf_merger = PdfFileMerger()
+            pdf_merger.append(pdf_save_rename)
+            pdf_merger.append(pdf_save_tmp)
+            pdf_merger.write(pdf_save_loc)
+            pdf_merger.close()
+            os.remove(pdf_save_tmp)
+            os.remove(pdf_save_rename)
+       except PermissionError:
+            logging.error("Missing Permission to write. File open in system editor or missing "
+                          "write permissions.") 
+
 
 def add_encoder_data(scanid):
     # This is for old metadata style and flyscans in x only
