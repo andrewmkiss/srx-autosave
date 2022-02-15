@@ -11,7 +11,7 @@ from reportlab.platypus import SimpleDocTemplate, Image, Paragraph, Table, Space
 import reportlab.lib.pagesizes
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import inch
-from PIL import pImage
+from PIL import Image
 # from databroker import Broker
 try:
     from databroker.v0 import Broker
