@@ -11,15 +11,11 @@ from reportlab.platypus import SimpleDocTemplate, Image, Paragraph, Table, Space
 import reportlab.lib.pagesizes
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import inch
-<<<<<<< HEAD
-from PIL import Image
-=======
 from PIL import Image as pImage
 from skimage import exposure
 from PyPDF2 import PdfFileMerger
 from tifffile import imsave
 
->>>>>>> 911c67d4f91348f8dbc647f4be855d3950d0e935
 # from databroker import Broker
 try:
     from databroker.v0 import Broker
@@ -27,7 +23,8 @@ except ModuleNotFoundError:
     from databroker import Broker
 
 import logging
-from new_makehdf import new_makehdf
+from pyxrf.api import *
+#from new_makehdf import new_makehdf
 
 try:
    from pyxrf.api_dev import db
@@ -386,7 +383,7 @@ def xrf_loop(start_id, N, gui=None):
                 try:
                     db[scanid].stop['time']
                     # make_hdf(scanid, completed_scans_only=True)
-                    new_makehdf(scanid)
+                    make_hdf(scanid)
                     ttime.sleep(1)
                     autoroi_xrf(scanid)
                     ttime.sleep(5)
