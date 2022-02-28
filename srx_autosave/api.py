@@ -382,8 +382,7 @@ def xrf_loop(start_id, N, gui=None):
                 # Check if the scan is done
                 try:
                     db[scanid].stop['time']
-                    # make_hdf(scanid, completed_scans_only=True)
-                    make_hdf(scanid)
+                    make_hdf(scanid, completed_scans_only=True)
                     ttime.sleep(1)
                     autoroi_xrf(scanid)
                     ttime.sleep(5)
