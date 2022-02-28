@@ -204,7 +204,7 @@ def autoroi_xrf(scanid):
                    "Cu_k" : [780, 820],
                    "Zn_k" : [780, 820],
                    "Pt_l" : [920, 960],
-                   "Au_l" : [1140, 1180]}
+                   "Au_l" : [950, 990]}
     
     print("Start exporting ROIs: Ca, Fe, Ni, Cu, Zn, Au.")
     h5file = glob.glob(f"scan2D_{scanid}_*.h5")
