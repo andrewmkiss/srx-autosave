@@ -176,7 +176,7 @@ def check_inputs(start_id, wd, N, dt):
     return (start_id, wd, N, dt)
 
 
-def autoroi_xrf(scanid):
+def autoroi_xrf(scanid, auto_dir):
     """
     SRX auto_roi
 
@@ -186,6 +186,8 @@ def autoroi_xrf(scanid):
     ----------
     scanid : int
         Scan ID
+    auto_dir : string
+        Folder to save the automatic processing
    
     Returns
     -------
@@ -208,39 +210,49 @@ def autoroi_xrf(scanid):
     
     print("Start exporting ROIs: Ca, Fe, Ni, Cu, Zn, Au.")
     h5file = glob.glob(f"scan2D_{scanid}_*.h5")
+
     if not len(h5file) == 0:
         f = h5py.File(h5file[0])
-        if not os.path.exists(f"scan_{scanid}"):
-            try:
-                os.mkdir(f"scan_{scanid}_rois")
-            except OSError:
-                print(f"Folder scan_{scanid}_rois exist!")
-            else:
-                print(f"Folder scan_{scanid}_rois created.")
+
+        try:
+            os.makedirs(os.path.join(auto_dir, f"scan_{scanid}_rois"), exist_ok=True)
+        except Exception as e:
+            print(e)
+            raise OSError(f'Cannot create scan_{scanid} directory')
+
         for x in element_roi:
             roi = np.sum(f['xrfmap/detsum/counts'][:, :, element_roi[x][0]:element_roi[x][1]], axis=2)
             sclr_I0 = f['xrfmap/scalers/val'][:, :, 0]
             #sclr_I0 = f['xrfmap/scalers/val'][:, :, 3]
             roi_norm = roi / sclr_I0
-            imsave(f'scan_{scanid}_rois/roi_{scanid}_{x}.tiff', roi_norm.astype("float32"), dtype=np.float32)
+            imsave(os.path.join(auto_dir, f'scan_{scanid}_rois', f'roi_{scanid}_{x}.tiff'),
+                   roi_norm.astype("float32"),
+                   dtype=np.float32)
+            # imsave(f'scan_{scanid}_rois/roi_{scanid}_{x}.tiff', roi_norm.astype("float32"), dtype=np.float32)
             percentiles = np.percentile(roi_norm, (0.5, 99.5))
             scaled = exposure.rescale_intensity(roi_norm,in_range=tuple(percentiles))
             min=np.min(scaled)    
             max=np.max(scaled)    
             roi_scaled = ((scaled-min)/(max-min))*255
-            imsave(f'scan_{scanid}_rois/roi_{scanid}_{x}.png', roi_scaled.astype("uint8"), dtype=np.uint8)
+            imsave(os.path.join(auto_dir, f'scan_{scanid}_rois', 'roi_{scanid}_{x}.png'),
+                   roi_scaled.astype("uint8"),
+                   dtype=np.uint8)
+            # imsave(f'{auto_dir}scan_{scanid}_rois/roi_{scanid}_{x}.png', roi_scaled.astype("uint8"), dtype=np.uint8)
         print("Finished exporting ROIs")
     else:
         print(f"scan2D_{scanid} can not be found!")
         pass
 
-def create_pdf(scanid):
+def create_pdf(scanid, auto_dir):
     """
     Automatic generate pdf report montaging all the saved png
 
     Parameters
     ----------
     scanid : int
+        Starting scan ID
+    auto_dir : string
+        Folder to save the automatic processing
 
     Returns
     -------
@@ -252,7 +264,7 @@ def create_pdf(scanid):
     item_tbl_data = []
     item_tbl_row = []
         
-    img_list = glob.glob(f'scan_{scanid}_rois/roi_*.png')
+    img_list = glob.glob(os.path.join(auto_dirs, f'scan_{scanid}_rois', 'roi_*.png'))
     
     for i, file in enumerate(img_list):
         last_item = len(img_list) - 1
@@ -341,6 +353,7 @@ def add_encoder_data(scanid):
 
 
 def xrf_loop(start_id, N, gui=None):
+    auto_dir = "auto_rois/"
     num = np.arange(start_id, start_id + N, 1)
     for i in range(N):
         # Check if the scan ID exists
@@ -384,9 +397,9 @@ def xrf_loop(start_id, N, gui=None):
                     db[scanid].stop['time']
                     make_hdf(scanid, completed_scans_only=True)
                     ttime.sleep(1)
-                    autoroi_xrf(scanid)
-                    ttime.sleep(5)
-                    create_pdf(scanid)
+                    autoroi_xrf(scanid, auto_dir=auto_dir)
+                    ttime.sleep(1)
+                    create_pdf(scanid, auto_dir=auto_dir)
                 except KeyError:
                     print('Scan not complete...')
                     pass
