@@ -16,11 +16,11 @@ from skimage import exposure
 from PyPDF2 import PdfFileMerger
 from tifffile import imsave
 
-# from databroker import Broker
-try:
-    from databroker.v0 import Broker
-except ModuleNotFoundError:
-    from databroker import Broker
+from databroker import Broker
+# try:
+#     from databroker.v0 import Broker
+# except ModuleNotFoundError:
+#     from databroker import Broker
 
 import logging
 from pyxrf.api import *
@@ -398,6 +398,10 @@ def xrf_loop(start_id, N, gui=None):
 
         else:
             print()
+
+    # Clear the db cache then return
+    db._catalog._entries.cache_clear()
+
     return
 
 
