@@ -264,7 +264,7 @@ def create_pdf(scanid, auto_dir):
     item_tbl_data = []
     item_tbl_row = []
         
-    img_list = glob.glob(os.path.join(auto_dirs, f'scan_{scanid}_rois', 'roi_*.png'))
+    img_list = glob.glob(os.path.join(auto_dir, f'scan_{scanid}_rois', 'roi_*.png'))
     
     for i, file in enumerate(img_list):
         last_item = len(img_list) - 1
