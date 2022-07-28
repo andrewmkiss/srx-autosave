@@ -220,12 +220,16 @@ def autoroi_xrf(scanid, auto_dir):
             print(e)
             raise OSError(f'Cannot create scan_{scanid} directory')
 
+        sclr_I0 = f['xrfmap/scalers/val'][:, :, 0]
+        sclr_IM = f['xrfmap/scalers/val'][:, :, 3]
+        imsave(os.path.join(auto_dir, f'scan_{scanid}_rois', f'{scanid}_I0.tif'),
+               roi_norm.astype("float32"),
+               dtype=np.float32)
+ 
         for x in element_roi:
             roi = np.sum(f['xrfmap/detsum/counts'][:, :, element_roi[x][0]:element_roi[x][1]], axis=2)
-            sclr_I0 = f['xrfmap/scalers/val'][:, :, 0]
-            #sclr_I0 = f['xrfmap/scalers/val'][:, :, 3]
             roi_norm = roi / sclr_I0
-            imsave(os.path.join(auto_dir, f'scan_{scanid}_rois', f'roi_{scanid}_{x}.tiff'),
+            imsave(os.path.join(auto_dir, f'scan_{scanid}_rois', f'roi_{scanid}_{x}.tif'),
                    roi_norm.astype("float32"),
                    dtype=np.float32)
             # imsave(f'scan_{scanid}_rois/roi_{scanid}_{x}.tiff', roi_norm.astype("float32"), dtype=np.float32)
@@ -234,7 +238,7 @@ def autoroi_xrf(scanid, auto_dir):
             min=np.min(scaled)    
             max=np.max(scaled)    
             roi_scaled = ((scaled-min)/(max-min))*255
-            imsave(os.path.join(auto_dir, f'scan_{scanid}_rois', 'roi_{scanid}_{x}.png'),
+            imsave(os.path.join(auto_dir, f'scan_{scanid}_rois', f'roi_{scanid}_{x}.png'),
                    roi_scaled.astype("uint8"),
                    dtype=np.uint8)
             # imsave(f'{auto_dir}scan_{scanid}_rois/roi_{scanid}_{x}.png', roi_scaled.astype("uint8"), dtype=np.uint8)
@@ -412,8 +416,8 @@ def xrf_loop(start_id, N, gui=None):
         else:
             print()
 
-    # Clear the db cache then return
-    db._catalog._entries.cache_clear()
+        # Clear the db cache then return
+        db._catalog._entries.cache_clear()
 
     return
 
