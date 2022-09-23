@@ -200,15 +200,28 @@ def autoroi_xrf(scanid, auto_dir):
 
     """
     # Load h5 file (autosaved)
-    element_roi = {'Ca_k' : [350, 390],
+##     element_roi = {"S_k" : [215, 245],
+##                    "Cl_k" : [247, 277], 
+##                    "Ca_k" : [350, 390],
+##                    "Fe_k" : [620, 660],
+##                    "Ni_k" : [730, 770],
+##                    "Cu_k" : [780, 820],
+##                    "Zn_k" : [780, 820],
+##                    "Pt_l" : [920, 960],
+##                    "Au_l" : [950, 990]}
+    element_roi = {"Si_k" : [159, 189],
+                   "S_k" : [215, 245],
+                   "P_k" : [186, 206],
+                   "Al_k" : [134, 164],
+                   "Mn_k" : [575, 605],
+                   "Cu_k" : [790, 820],
+                   "Cl_k" : [247, 277], 
+                   "Ca_k" : [350, 390],
                    "Fe_k" : [620, 660],
-                   "Ni_k" : [730, 770],
-                   "Cu_k" : [780, 820],
                    "Zn_k" : [780, 820],
-                   "Pt_l" : [920, 960],
                    "Au_l" : [950, 990]}
     
-    print("Start exporting ROIs: Ca, Fe, Ni, Cu, Zn, Au.")
+    print("Start exporting ROIs: S, Cl, Ca, Fe, Zn, Au.")
     h5file = glob.glob(f"scan2D_{scanid}_*.h5")
 
     if not len(h5file) == 0:
@@ -223,7 +236,7 @@ def autoroi_xrf(scanid, auto_dir):
         sclr_I0 = f['xrfmap/scalers/val'][:, :, 0]
         sclr_IM = f['xrfmap/scalers/val'][:, :, 3]
         imsave(os.path.join(auto_dir, f'scan_{scanid}_rois', f'{scanid}_I0.tif'),
-               roi_norm.astype("float32"),
+               sclr_I0.astype("float32"),
                dtype=np.float32)
  
         for x in element_roi:
