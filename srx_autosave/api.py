@@ -53,7 +53,7 @@ logger = logging.getLogger()
 logger.setLevel(logging.WARNING)
 
 #FLAG for auto_roi and create_pdf
-auto_roi_flag = False
+auto_roi_flag = True
 """
 SRX Autosave APIs
 
@@ -201,16 +201,11 @@ def autoroi_xrf(scanid, auto_dir):
 
     """
     # Load h5 file (autosaved)
-    element_roi = {"Ar_k" : [281, 311],
-                   "S_k" : [215, 245],
-                   "Cl_k" : [247, 277], 
-                   "Ca_k" : [350, 390],
-                   "Fe_k" : [620, 660],
+    element_roi = {"K_k" : [316, 346],
+                   "Mn_k" : [215, 245],
                    "Ni_k" : [730, 770],
                    "Cu_k" : [780, 820],
-                   "Zn_k" : [780, 820],
-                   "Pt_l" : [920, 960],
-                   "Au_l" : [950, 990]}
+                   "Bi_l" : [1069, 1099]}
 ##     element_roi = {"Si_k" : [159, 189],
 ##                    "S_k" : [215, 245],
 ##                    "P_k" : [186, 206],
@@ -223,31 +218,33 @@ def autoroi_xrf(scanid, auto_dir):
 ##                    "Zn_k" : [780, 820],
 ##                    "Au_l" : [950, 990]}
 ##     
-    print("Start exporting ROIs: S, Cl, Ca, Fe, Zn, Au.")
+    print("Start exporting ROIs")
     h5file = glob.glob(f"scan2D_{scanid}_*.h5")
 
+    #save the tif and png in local home dir to avoid the eviction
+    save_dir = '/home/xf05id1/auto_rois/'
     if not len(h5file) == 0:
         f = h5py.File(h5file[0])
 
         try:
-            os.makedirs(os.path.join(auto_dir, f"scan_{scanid}_rois"), exist_ok=True)
+            os.makedirs(os.path.join(save_dir, f"scan_{scanid}_rois"), exist_ok=True)
         except Exception as e:
             print(e)
             raise OSError(f'Cannot create scan_{scanid} directory')
 
         sclr_I0 = f['xrfmap/scalers/val'][:, :, 0]
         sclr_IM = f['xrfmap/scalers/val'][:, :, 3]
-        imsave(os.path.join(auto_dir, f'scan_{scanid}_rois', f'{scanid}_I0.tif'),
+        imsave(os.path.join(save_dir, f'scan_{scanid}_rois', f'{scanid}_I0.tif'),
                sclr_I0.astype("float32"),
                dtype=np.float32)
  
         for x in element_roi:
             roi = np.sum(f['xrfmap/detsum/counts'][:, :, element_roi[x][0]:element_roi[x][1]], axis=2)
             roi_norm = roi / sclr_I0
-            imsave(os.path.join(auto_dir, f'scan_{scanid}_rois', f'roi_{scanid}_{x}.tif'),
+            imsave(os.path.join(save_dir, f'scan_{scanid}_rois', f'roi_{scanid}_{x}.tif'),
                    roi.astype("float32"),
                    dtype=np.float32)
-            imsave(os.path.join(auto_dir, f'scan_{scanid}_rois', f'roi_{scanid}_{x}_norm.tif'),
+            imsave(os.path.join(save_dir, f'scan_{scanid}_rois', f'roi_{scanid}_{x}_norm.tif'),
                    roi_norm.astype("float32"),
                    dtype=np.float32)
             # imsave(f'scan_{scanid}_rois/roi_{scanid}_{x}.tiff', roi_norm.astype("float32"), dtype=np.float32)
@@ -256,7 +253,7 @@ def autoroi_xrf(scanid, auto_dir):
             min=np.min(scaled)    
             max=np.max(scaled)    
             roi_scaled = ((scaled-min)/(max-min))*255
-            imsave(os.path.join(auto_dir, f'scan_{scanid}_rois', f'roi_{scanid}_{x}_norm.png'),
+            imsave(os.path.join(save_dir, f'scan_{scanid}_rois', f'roi_{scanid}_{x}_norm.png'),
                    roi_scaled.astype("uint8"),
                    dtype=np.uint8)
             # imsave(f'{auto_dir}scan_{scanid}_rois/roi_{scanid}_{x}.png', roi_scaled.astype("uint8"), dtype=np.uint8)
@@ -286,7 +283,8 @@ def create_pdf(scanid, auto_dir):
     item_tbl_data = []
     item_tbl_row = []
         
-    img_list = glob.glob(os.path.join(auto_dir, f'scan_{scanid}_rois', 'roi_*.png'))
+    save_dir = '/home/xf05id1/auto_rois/'    
+    img_list = glob.glob(os.path.join(save_dir, f'scan_{scanid}_rois', 'roi_*.png'))
     
     for i, file in enumerate(img_list):
         last_item = len(img_list) - 1
@@ -337,7 +335,8 @@ def create_pdf(scanid, auto_dir):
             logging.error("Missing Permission to write. File open in system editor or missing "
                           "write permissions.") 
 
-
+    #os.system(f'cp /home/xf05id1/XRF_RoiMaps_log.pdf {auto_dir}.')
+    
 def add_encoder_data(scanid):
     # This is for old metadata style and flyscans in x only
     # Get scan ID
