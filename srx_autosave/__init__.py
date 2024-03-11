@@ -28,7 +28,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setProperty("windowIcon", path / "gui/5-ID_TopAlign.png")
 
         ver = _version.get_versions()
-        ver_str = f"version: {ver['version'][:3]}    {ver['date'].split('T')[0]}"
+        try:
+            ver_str = f"version: {ver['version'][:3]}    {ver['date'].split('T')[0]}"
+        except AttributeError:
+            ver_str = f"version: {ver['version'][:3]}"
         self.label_version.setProperty("text", ver_str)
 
         self.pushButton_stop.setProperty("enabled", False)
