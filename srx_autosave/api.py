@@ -431,6 +431,8 @@ def xrf_loop(start_id, N, gui=None):
             else:   
                 print(f"XRF HDF5 already created.")
 
+        elif h.start['scan']['type'] == 'XAS_STEP':
+            print("Let's do this!")
         else:
             print()
 
