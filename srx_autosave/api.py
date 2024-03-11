@@ -488,7 +488,7 @@ def xanes_textout(
 
 
 def xanes_afterscan_plan(scanid, roinum=1):
-    logger = get_run_logger()
+    # logger = get_run_logger()
 
     # Custom header list
     headeritem = []
@@ -666,7 +666,8 @@ def xrf_loop(start_id, N, gui=None):
                     # Make file
                     # xanes_afterscan_plan(scanid, filename, roinum)
                     # xanes_afterscan_plan(scanid, f"scan{scanid}.xdi", [1])
-                    xanes_afterscan_plan(ref, roinum=1)
+                    xanes_afterscan_plan(scanid, roinum=1)
+                    print()
                 except KeyError:
                     print("Scan not complete...")
                     pass
@@ -679,7 +680,7 @@ def xrf_loop(start_id, N, gui=None):
             print()
 
         # Clear the db cache then return
-        db._catalog._entries.cache_clear()
+        # db._catalog._entries.cache_clear()
 
     return
 
